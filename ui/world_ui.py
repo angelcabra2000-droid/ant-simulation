@@ -12,17 +12,23 @@ class WorldUI:
         self.time_font = pygame.font.SysFont("arial", 20)
 
     def handle_event(self, event, world, camera, grid, world_width, world_height):
+
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 
+            # Botón Reiniciar
             if self.reset_button.collidepoint(event.pos):
 
-                # Crear nuevo mundo
                 new_world = type(world)(world_width, world_height)
 
                 camera.world = new_world
                 grid.world = new_world
 
                 return new_world
+
+            # Botón Pausa
+            if self.pause_button.collidepoint(event.pos):
+
+                world.paused = not world.paused  # 🔥 Toggle
 
         return world
 

@@ -45,7 +45,7 @@ def main():
         )
 
         # 🎥 Movimiento cámara
-        input_handler.handle_camera_movement(dt, camera)
+        input_handler.handle_camera_movement(dt, camera, world)
 
         # 🌍 Actualizar mundo
         world.update(dt)

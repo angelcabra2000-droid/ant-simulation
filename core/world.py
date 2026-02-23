@@ -20,11 +20,16 @@ class World:
         self.ants = []
         self.create_initial_ant()
 
+        self.paused = False
+
     def create_initial_ant(self):
         ant = Ant(1, self)
         self.ants.append(ant)
 
     def update(self, dt):
+        if self.paused:
+            return  # ⛔ No actualizar nada
+
         self.world_time += dt
 
         for ant in self.ants:

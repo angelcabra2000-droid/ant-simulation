@@ -16,7 +16,8 @@ class Ant:
         self.energy = 100
 
         # ---- PROPIEDADES FÍSICAS REALES ----
-        self.radius = 0.025  # 2.5 cm reales
+        self.body_length = 0.025  # 2.5 cm largo real
+        self.radius = 0.004       # 4 mm aprox grosor
         self.speed = 0.3     # m/s realista
 
         # ---- DIRECCIÓN ----
@@ -71,8 +72,10 @@ class Ant:
 
         screen_pos = camera.world_to_screen(self.x, self.y)
 
-        radius_pixels = int(
-            self.radius * camera.pixels_per_meter * camera.zoom
-        )
+        # Escalado físico real
+        radius_pixels = self.radius * camera.pixels_per_meter * camera.zoom
 
-        pygame.draw.circle(screen, ANT_COLOR, screen_pos, max(radius_pixels, 1))
+        # Evitar que desaparezca completamente al alejar zoom
+        radius_pixels = max(int(radius_pixels), 1)
+
+        pygame.draw.circle(screen, ANT_COLOR, screen_pos, radius_pixels)
