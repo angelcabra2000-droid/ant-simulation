@@ -1,0 +1,22 @@
+# config/settings.py
+
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 700
+FPS = 60
+
+# Mundo real
+WORLD_WIDTH_METERS = 10
+WORLD_HEIGHT_METERS = 10
+
+# Escala
+PIXELS_PER_METER = 50  # 100m * 5px = 500px visibles aprox
+
+# Grid
+GRID_SIZE = 1  # metros
+
+# Colores
+BACKGROUND_COLOR = (30, 30, 30)
+GRID_COLOR = (60, 60, 60)
+ANT_COLOR = (200, 80, 40)
+PANEL_COLOR = (40, 40, 40)
+TEXT_COLOR = (220, 220, 220)
