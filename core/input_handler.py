@@ -10,7 +10,9 @@ class InputHandler:
 
         for event in events:
 
-            # Salir
+            # ========================
+            # SALIR
+            # ========================
             if event.type == pygame.QUIT:
                 world.save_state()
                 return False, world
@@ -20,16 +22,41 @@ class InputHandler:
             # ========================
             if event.type == pygame.KEYDOWN:
 
-                # Mostrar / ocultar grid
                 if event.key == pygame.K_g:
                     self.show_grid = not self.show_grid
 
-                # 🔥 Pausar / Reanudar simulación
                 if event.key == pygame.K_SPACE:
                     world.paused = not world.paused
 
             # ========================
-            # UI (botón reset)
+            # MOUSE
+            # ========================
+            if event.type == pygame.MOUSEBUTTONDOWN:
+
+                # Scroll
+                if event.button == 4:
+                    camera.zoom_in()
+                elif event.button == 5:
+                    camera.zoom_out()
+
+                # Click izquierdo
+                elif event.button == 1:
+
+                    mouse_pos = event.pos  # 🔥 usar event.pos
+
+                    # Primero intentar cerrar panel
+                    panel.handle_event(event)
+
+                    # Luego intentar seleccionar hormiga
+                    for ant in world.ants:
+                        ant_screen = camera.world_to_screen(ant.x, ant.y)
+
+                        if pygame.math.Vector2(mouse_pos).distance_to(ant_screen) < 10:
+                            panel.set_selected_agent(ant)
+                            break
+
+            # ========================
+            # UI (reset)
             # ========================
             world = ui.handle_event(
                 event,
@@ -39,34 +66,6 @@ class InputHandler:
                 world_width,
                 world_height
             )
-
-            # ========================
-            # Panel lateral
-            # ========================
-            panel.handle_event(event)
-
-            # ========================
-            # Mouse
-            # ========================
-            if event.type == pygame.MOUSEBUTTONDOWN:
-
-                # Zoom con scroll
-                if event.button == 4:
-                    camera.zoom_in()
-                elif event.button == 5:
-                    camera.zoom_out()
-
-                # Click izquierdo → selección hormiga
-                elif event.button == 1:
-
-                    mouse_pos = pygame.mouse.get_pos()
-
-                    for ant in world.ants:
-                        ant_screen = camera.world_to_screen(ant.x, ant.y)
-
-                        if pygame.math.Vector2(mouse_pos).distance_to(ant_screen) < 10:
-                            panel.set_selected_agent(ant)
-                            break
 
         return True, world
 

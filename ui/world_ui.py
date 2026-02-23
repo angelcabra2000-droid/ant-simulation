@@ -24,12 +24,6 @@ class WorldUI:
                 grid.world = new_world
 
                 return new_world
-
-            # Botón Pausa
-            if self.pause_button.collidepoint(event.pos):
-
-                world.paused = not world.paused  # 🔥 Toggle
-
         return world
 
     def draw(self, screen, world):
