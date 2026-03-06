@@ -2,6 +2,7 @@ import random
 import math
 import pygame
 from config.settings import ANT_COLOR
+from collections import deque
 
 
 class Ant:
@@ -31,7 +32,7 @@ class Ant:
 
         self.world = world
 
-        self.trail = []
+        self.trail = deque(maxlen=20000)
         self.trail_timer = 0
         self.trail_interval = 0.5
 
@@ -61,8 +62,6 @@ class Ant:
             self.trail.append((self.x, self.y))
             self.trail_timer = 0
 
-        if len(self.trail) > 50000:
-            self.trail.pop(0)
 
 
         # Límites cartesianos (-50, 50)
@@ -88,7 +87,9 @@ class Ant:
 
             points = []
 
-            for x, y in self.trail:
+            trail_to_draw = list(self.trail)[-2000:]
+
+            for x, y in trail_to_draw:
                 screen_point = camera.world_to_screen(x, y)
                 points.append(screen_point)
 
