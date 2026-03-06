@@ -19,7 +19,7 @@ class Ant:
         # ---- PROPIEDADES FÍSICAS REALES ----
         self.body_length = 0.025  # 2.5 cm largo real
         self.radius = 0.004       # 4 mm aprox grosor
-        self.speed = 0.3     # m/s realista
+        self.speed = 0.08     # m/s realista
 
         # ---- DIRECCIÓN ----
         self.angle = random.uniform(0, 2 * math.pi)
@@ -34,7 +34,7 @@ class Ant:
 
         self.trail = deque(maxlen=20000)
         self.trail_timer = 0
-        self.trail_interval = 0.5
+        self.trail_interval = 1
 
     def update(self, dt, world):
 

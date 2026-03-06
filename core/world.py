@@ -1,90 +1,96 @@
-import json
 import os
 
 from agents.ant import Ant
 from agents.nest import Nest
+from core.save_system import save_world, load_world, reset_world
 
 
 class World:
+
     def __init__(self, width_meters, height_meters):
+
+        # Tamaño del mundo
         self.width_meters = width_meters
         self.height_meters = height_meters
-
-        self.world_time = 0.0  # Tiempo en segundos desde que nació el mundo
 
         self.half_width = width_meters / 2
         self.half_height = height_meters / 2
 
+        # Tiempo global del mundo
+        self.world_time = 0.0
+
+        # Objetos del mundo
         self.nest = Nest()
 
+        # Agentes
         self.ants = []
+
+        # Crear primera hormiga
         self.create_initial_ant()
 
+        # Control simulación
         self.paused = False
 
+    # =========================
+    # CREACIÓN DE AGENTES
+    # =========================
+
     def create_initial_ant(self):
+
         ant = Ant(1, self)
         self.ants.append(ant)
 
+    # =========================
+    # UPDATE DEL MUNDO
+    # =========================
+
     def update(self, dt):
+
         if self.paused:
-            return  # ⛔ No actualizar nada
+            return
 
         self.world_time += dt
 
         for ant in self.ants:
             ant.update(dt, self)
 
+    # =========================
+    # RENDER
+    # =========================
 
     def draw(self, screen, camera, show_trails=True):
+
+        # Dibujar nido
         self.nest.draw(screen, camera)
 
+        # Dibujar hormigas
         for ant in self.ants:
             ant.draw(screen, camera, show_trails)
 
+    # =========================
+    # SISTEMA DE GUARDADO
+    # =========================
+
     def save_state(self):
-        ant = self.ants[0]
 
-        data = {
-            "age": ant.age,
-            "energy": ant.energy,
-            "x": ant.x,
-            "y": ant.y,
-            "angle": ant.angle,
-            "world_time": self.world_time,
-            "trail": ant.trail
-        }
-
-        with open("save.json", "w") as f:
-            json.dump(data, f)
+        save_world(self)
 
     def load_state(self):
 
-        if not os.path.exists("save.json"):
-            return
+        load_world(self)
 
-        if os.path.getsize("save.json") == 0:
-            return
-
-        with open("save.json", "r") as f:
-            data = json.load(f)
-
-        ant = self.ants[0]
-
-        ant.age = data["age"]
-        ant.energy = data["energy"]
-        ant.x = data["x"]
-        ant.y = data["y"]
-        ant.angle = data["angle"]
-
-        ant.trail = data.get("trail", [])
-
-        self.world_time = data.get("world_time", 0.0)
+    # =========================
+    # RESET DEL MUNDO
+    # =========================
 
     def reset(self):
-        if os.path.exists("save.json"):
-            os.remove("save.json")
+
+        reset_world()
+
+        self.world_time = 0
 
         self.nest = Nest()
+
         self.ants.clear()
+
         self.create_initial_ant()
