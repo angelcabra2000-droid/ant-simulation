@@ -1,4 +1,5 @@
 from enviroment.obstacle import Obstacle
+from enviroment.object_type import ObjectType
 
 
 class ObstacleManager:
@@ -6,9 +7,9 @@ class ObstacleManager:
     def __init__(self):
         self.obstacles = []
 
-    def add_obstacle(self, x, y, width=0.4, height=0.4):
+    def add_obstacle(self, x, y, width=0.4, height=0.4, obj_type=ObjectType.OBSTACLE):
 
-        obstacle = Obstacle(x, y, width, height)
+        obstacle = Obstacle(x, y, width, height, obj_type)
 
         self.obstacles.append(obstacle)
 

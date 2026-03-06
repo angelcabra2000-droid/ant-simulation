@@ -1,4 +1,5 @@
 import pygame
+from enviroment.object_type import ObjectType
 
 
 class InputHandler:
@@ -7,6 +8,7 @@ class InputHandler:
         self.show_grid = True
         self.show_trails = True
         self.place_obstacle_mode = False
+        self.current_object_type = ObjectType.OBSTACLE
 
     def handle_events(self, events, world, camera, grid, panel, ui, world_width, world_height):
 
@@ -35,6 +37,15 @@ class InputHandler:
 
                 if event.key == pygame.K_o:
                     self.place_obstacle_mode = not self.place_obstacle_mode
+
+                if event.key == pygame.K_1:
+                    self.current_object_type = ObjectType.OBSTACLE
+
+                if event.key == pygame.K_2:
+                    self.current_object_type = ObjectType.FOOD
+
+                if event.key == pygame.K_3:
+                    self.current_object_type = ObjectType.DANGER
 
             # ========================
             # MOUSE
@@ -79,7 +90,11 @@ class InputHandler:
                             mouse_pos[1]
                         )
 
-                        world.obstacles.add_obstacle(world_x, world_y)
+                        world.obstacles.add_obstacle(
+                            world_x,
+                            world_y,
+                            obj_type=self.current_object_type
+                        )
 
                         continue
 

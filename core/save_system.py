@@ -2,6 +2,7 @@ import json
 import os
 
 from collections import deque
+from enviroment.object_type import ObjectType
 
 
 SAVE_FILE = "save.json"
@@ -26,7 +27,8 @@ def save_world(world):
             "x": obs.x,
             "y": obs.y,
             "width": obs.width,
-            "height": obs.height
+            "height": obs.height, 
+            "type": obs.type.name
         })
 
     data = {
@@ -66,7 +68,8 @@ def load_world(world):
             obs_data["x"],
             obs_data["y"],
             obs_data["width"],
-            obs_data["height"]
+            obs_data["height"],
+            ObjectType[obs_data["type"]]
         )
 
 def reset_world(world):
