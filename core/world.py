@@ -3,7 +3,7 @@ import os
 from agents.ant import Ant
 from agents.nest import Nest
 from core.save_system import save_world, load_world, reset_world
-
+from enviroment.obstacle_manager import ObstacleManager
 
 class World:
 
@@ -21,6 +21,7 @@ class World:
 
         # Objetos del mundo
         self.nest = Nest()
+        self.obstacles = ObstacleManager()
 
         # Agentes
         self.ants = []
@@ -60,10 +61,10 @@ class World:
 
     def draw(self, screen, camera, show_trails=True):
 
-        # Dibujar nido
         self.nest.draw(screen, camera)
 
-        # Dibujar hormigas
+        self.obstacles.draw(screen, camera)
+
         for ant in self.ants:
             ant.draw(screen, camera, show_trails)
 

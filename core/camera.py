@@ -24,6 +24,20 @@ class Camera:
         screen_x = (x - self.center_x) * self.pixels_per_meter * self.zoom + self.screen_width / 2
         screen_y = -(y - self.center_y) * self.pixels_per_meter * self.zoom + self.screen_height / 2
         return int(screen_x), int(screen_y)
+    
+    def screen_to_world(self, screen_x, screen_y):
+
+        world_x = (
+            (screen_x - self.screen_width / 2) /
+            (self.pixels_per_meter * self.zoom)
+        ) + self.center_x
+
+        world_y = (
+            -(screen_y - self.screen_height / 2) /
+            (self.pixels_per_meter * self.zoom)
+        ) + self.center_y
+
+        return world_x, world_y
 
     def move(self, dx, dy):
         self.center_x += dx

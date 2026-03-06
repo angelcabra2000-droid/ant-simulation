@@ -6,6 +6,7 @@ class InputHandler:
     def __init__(self):
         self.show_grid = True
         self.show_trails = True
+        self.place_obstacle_mode = False
 
     def handle_events(self, events, world, camera, grid, panel, ui, world_width, world_height):
 
@@ -32,27 +33,66 @@ class InputHandler:
                 if event.key == pygame.K_t:
                     self.show_trails = not self.show_trails
 
+                if event.key == pygame.K_o:
+                    self.place_obstacle_mode = not self.place_obstacle_mode
+
             # ========================
             # MOUSE
             # ========================
             if event.type == pygame.MOUSEBUTTONDOWN:
 
-                # Scroll
+                mouse_pos = event.pos  # 🔥 siempre definir primero
+
+                # Scroll zoom
                 if event.button == 4:
                     camera.zoom_in()
+
                 elif event.button == 5:
                     camera.zoom_out()
 
-                # Click izquierdo
+                # ========================
+                # CLICK DERECHO (BORRAR OBSTÁCULO)
+                # ========================
+                elif event.button == 3:
+
+                    world_x, world_y = camera.screen_to_world(
+                        mouse_pos[0],
+                        mouse_pos[1]
+                    )
+
+                    world.obstacles.remove_obstacle_at(world_x, world_y)
+
+                    continue
+
+                # ========================
+                # CLICK IZQUIERDO
+                # ========================
                 elif event.button == 1:
 
-                    mouse_pos = event.pos  # 🔥 usar event.pos
+                    # ========================
+                    # CREAR OBSTÁCULO
+                    # ========================
+                    if self.place_obstacle_mode:
 
-                    # Primero intentar cerrar panel
+                        world_x, world_y = camera.screen_to_world(
+                            mouse_pos[0],
+                            mouse_pos[1]
+                        )
+
+                        world.obstacles.add_obstacle(world_x, world_y)
+
+                        continue
+
+                    # ========================
+                    # PANEL
+                    # ========================
                     panel.handle_event(event)
 
-                    # Luego intentar seleccionar hormiga
+                    # ========================
+                    # SELECCIONAR HORMIGA
+                    # ========================
                     for ant in world.ants:
+
                         ant_screen = camera.world_to_screen(ant.x, ant.y)
 
                         if pygame.math.Vector2(mouse_pos).distance_to(ant_screen) < 10:
@@ -87,9 +127,12 @@ class InputHandler:
 
         if keys[pygame.K_a]:
             camera.move(-move_amount, 0)
+
         if keys[pygame.K_d]:
             camera.move(move_amount, 0)
+
         if keys[pygame.K_w]:
             camera.move(0, move_amount)
+
         if keys[pygame.K_s]:
             camera.move(0, -move_amount)
