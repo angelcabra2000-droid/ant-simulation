@@ -5,6 +5,7 @@ class InputHandler:
 
     def __init__(self):
         self.show_grid = True
+        self.show_trails = True
 
     def handle_events(self, events, world, camera, grid, panel, ui, world_width, world_height):
 
@@ -27,6 +28,9 @@ class InputHandler:
 
                 if event.key == pygame.K_SPACE:
                     world.paused = not world.paused
+
+                if event.key == pygame.K_t:
+                    self.show_trails = not self.show_trails
 
             # ========================
             # MOUSE

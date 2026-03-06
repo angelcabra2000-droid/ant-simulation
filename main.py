@@ -56,7 +56,7 @@ def main():
         if input_handler.show_grid:
             grid.draw(screen, camera)
 
-        world.draw(screen, camera)
+        world.draw(screen, camera, input_handler.show_trails)
 
         ui.draw(screen, world)
 

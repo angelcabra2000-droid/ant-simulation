@@ -31,6 +31,10 @@ class Ant:
 
         self.world = world
 
+        self.trail = []
+        self.trail_timer = 0
+        self.trail_interval = 0.5
+
     def update(self, dt, world):
 
         # Envejecer
@@ -51,6 +55,16 @@ class Ant:
         self.x += dx
         self.y += dy
 
+        self.trail_timer += dt
+
+        if self.trail_timer >= self.trail_interval:
+            self.trail.append((self.x, self.y))
+            self.trail_timer = 0
+
+        if len(self.trail) > 50000:
+            self.trail.pop(0)
+
+
         # Límites cartesianos (-50, 50)
         if self.x < -world.half_width:
             self.x = -world.half_width
@@ -68,7 +82,17 @@ class Ant:
             self.y = world.half_height
             self.angle = -self.angle
 
-    def draw(self, screen, camera):
+    def draw(self, screen, camera, show_trail=True):
+
+        if show_trail and len(self.trail) > 1:
+
+            points = []
+
+            for x, y in self.trail:
+                screen_point = camera.world_to_screen(x, y)
+                points.append(screen_point)
+
+            pygame.draw.lines(screen, (180,180,180), False, points, 2)
 
         screen_pos = camera.world_to_screen(self.x, self.y)
 

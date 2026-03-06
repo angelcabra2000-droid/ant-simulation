@@ -36,11 +36,11 @@ class World:
             ant.update(dt, self)
 
 
-    def draw(self, screen, camera):
+    def draw(self, screen, camera, show_trails=True):
         self.nest.draw(screen, camera)
 
         for ant in self.ants:
-            ant.draw(screen, camera)
+            ant.draw(screen, camera, show_trails)
 
     def save_state(self):
         ant = self.ants[0]
@@ -51,7 +51,8 @@ class World:
             "x": ant.x,
             "y": ant.y,
             "angle": ant.angle,
-            "world_time": self.world_time
+            "world_time": self.world_time,
+            "trail": ant.trail
         }
 
         with open("save.json", "w") as f:
@@ -75,6 +76,9 @@ class World:
         ant.x = data["x"]
         ant.y = data["y"]
         ant.angle = data["angle"]
+
+        ant.trail = data.get("trail", [])
+
         self.world_time = data.get("world_time", 0.0)
 
     def reset(self):
