@@ -11,6 +11,8 @@ class WorldUI:
         self.button_font = pygame.font.SysFont("arial", 18)
         self.time_font = pygame.font.SysFont("arial", 20)
 
+        self.edit_font = pygame.font.SysFont("arial", 22)
+
     def handle_event(self, event, world, camera, grid, world_width, world_height):
 
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
@@ -26,9 +28,10 @@ class WorldUI:
                 return new_world
         return world
 
-    def draw(self, screen, world):
+    def draw(self, screen, world, input_handler):
         self.draw_time(screen, world)
         self.draw_reset_button(screen)
+        self.draw_edit_mode(screen, input_handler)
 
     def draw_time(self, screen, world):
         minutes = int(world.world_time // 60)
@@ -54,3 +57,15 @@ class WorldUI:
         text_rect = text_surface.get_rect(center=self.reset_button.center)
 
         screen.blit(text_surface, text_rect)
+
+    def draw_edit_mode(self, screen, input_handler):
+
+        if input_handler.place_obstacle_mode:
+
+            text = "Puedes editar el mundo"
+            surface = self.edit_font.render(text, True, (255, 255, 255))
+
+            rect = surface.get_rect()
+            rect.topleft = (20, 70)
+
+            screen.blit(surface, rect)

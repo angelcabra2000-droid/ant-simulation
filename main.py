@@ -58,7 +58,7 @@ def main():
 
         world.draw(screen, camera, input_handler.show_trails)
 
-        ui.draw(screen, world)
+        ui.draw(screen, world, input_handler)
 
         panel.draw(screen)
 

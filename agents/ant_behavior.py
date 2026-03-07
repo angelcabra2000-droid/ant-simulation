@@ -93,6 +93,12 @@ class AntBehavior:
                     ant.angle = angle_away + random.uniform(-0.5, 0.5)
 
         # -------------------
+        # EVITAR OBSTÁCULOS
+        # -------------------
+
+        AntBehavior.avoid_obstacles(ant)
+
+        # -------------------
         # MOVIMIENTO
         # -------------------
 
@@ -101,34 +107,6 @@ class AntBehavior:
 
         ant.x += dx
         ant.y += dy
-
-        # -------------------
-        # COLISIONES CON OBSTÁCULOS
-        # -------------------
-
-        for obj in ant.world.obstacles.obstacles:
-
-            if obj.type.name == "OBSTACLE":
-
-                if AntBehavior.circle_rect_collision(ant, obj):
-
-                    # vector hacia el obstáculo
-                    dx = obj.x - ant.x
-                    dy = obj.y - ant.y
-
-                    # dirección tangencial (rodear)
-                    tangent_x = -dy
-                    tangent_y = dx
-
-                    angle = math.atan2(tangent_y, tangent_x)
-
-                    # pequeño empujón para no quedarse pegada
-                    push = ant.radius * 0.5
-                    ant.x -= dx * push
-                    ant.y -= dy * push
-
-                    # girar siguiendo el borde
-                    ant.angle = angle + random.uniform(-0.2, 0.2)
 
         # ---- TRAIL ----
 
@@ -188,13 +166,11 @@ class AntBehavior:
     @staticmethod
     def react_to_object(ant, obj):
 
-        # ---- COMIDA ----
         if obj.type.name == "FOOD":
 
             ant.target = obj
             ant.state = "GoingToFood"
 
-        # ---- PELIGRO ----
         elif obj.type.name == "DANGER":
 
             ant.target = obj
@@ -219,3 +195,37 @@ class AntBehavior:
         dy = ant.y - closest_y
 
         return dx*dx + dy*dy < ant.radius * ant.radius
+
+    # ---------------------------------
+    # EVITAR OBSTÁCULOS
+    # ---------------------------------
+
+    @staticmethod
+    def avoid_obstacles(ant):
+
+        for obj in ant.world.obstacles.obstacles:
+
+            if obj.type.name != "OBSTACLE":
+                continue
+
+            if AntBehavior.circle_rect_collision(ant, obj):
+
+                dx = obj.x - ant.x
+                dy = obj.y - ant.y
+
+                # dirección tangencial (rodear)
+                tangent_x = -dy
+                tangent_y = dx
+
+                ant.angle = math.atan2(tangent_y, tangent_x)
+
+                # empujar fuera del obstáculo
+                dist = math.sqrt(dx*dx + dy*dy)
+
+                if dist != 0:
+                    ant.x -= (dx/dist) * ant.radius
+                    ant.y -= (dy/dist) * ant.radius
+
+                return True
+
+        return False
