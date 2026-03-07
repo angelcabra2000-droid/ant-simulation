@@ -7,7 +7,7 @@ class ObstacleManager:
     def __init__(self):
         self.obstacles = []
 
-    def add_obstacle(self, x, y, width=0.4, height=0.4, obj_type=ObjectType.OBSTACLE):
+    def add_obstacle(self, x, y, width=0.04, height=0.04, obj_type=ObjectType.OBSTACLE):
 
         obstacle = Obstacle(x, y, width, height, obj_type)
 
@@ -27,3 +27,5 @@ class ObstacleManager:
 
                 self.obstacles.remove(obstacle)
                 return
+            
+    

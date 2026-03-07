@@ -11,6 +11,14 @@ class Obstacle:
         self.height = height
         self.type = obj_type
 
+    @property
+    def half_width(self):
+        return self.width / 2
+
+    @property
+    def half_height(self):
+        return self.height / 2
+
     def draw(self, screen, camera):
 
         screen_pos = camera.world_to_screen(self.x, self.y)
@@ -36,3 +44,5 @@ class Obstacle:
             color = (200,0,0)
 
         pygame.draw.rect(screen, color, rect)
+
+    
