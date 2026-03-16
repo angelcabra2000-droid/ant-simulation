@@ -17,10 +17,17 @@ def save_world(world):
             "energy": ant.energy,
             "x": ant.x,
             "y": ant.y,
-            "angle": ant.angle, 
+            "angle": ant.angle,
+
+            "state": ant.state,
+
+            "current_speed": ant.current_speed,
+            "nest_timer": ant.nest_timer,
+            "return_turn_timer": ant.return_turn_timer,
+            "turn_timer": ant.turn_timer,
+
             "trail": list(ant.trail)
         })
-
     obstacles_data = []
     for obs in world.obstacles.obstacles:
         obstacles_data.append({
@@ -52,11 +59,20 @@ def load_world(world):
 
     # cargar hormigas
     for ant, ant_data in zip(world.ants, data.get("ants", [])):
+
         ant.age = ant_data["age"]
         ant.energy = ant_data["energy"]
         ant.x = ant_data["x"]
         ant.y = ant_data["y"]
         ant.angle = ant_data["angle"]
+
+        ant.state = ant_data.get("state", "Exploring")
+
+        ant.current_speed = ant_data.get("current_speed", ant.speed)
+
+        ant.nest_timer = ant_data.get("nest_timer", 0)
+        ant.return_turn_timer = ant_data.get("return_turn_timer", 0)
+        ant.turn_timer = ant_data.get("turn_timer", 0)
 
         ant.trail = deque(ant_data.get("trail", []), maxlen=20000)
 

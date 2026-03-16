@@ -5,107 +5,91 @@ from enviroment.object_type import ObjectType
 class InputHandler:
 
     def __init__(self):
-        self.show_grid = True
-        self.show_trails = True
+
+        # visualización
+        self.show_grid = False
+        self.show_trails = False
+
+        # modo de creación de objetos
         self.place_obstacle_mode = False
         self.current_object_type = ObjectType.OBSTACLE
+
+    # ---------------------------------
 
     def handle_events(self, events, world, camera, grid, panel, ui, world_width, world_height):
 
         for event in events:
 
-            # ========================
-            # SALIR
-            # ========================
+            # ----- cerrar programa -----
             if event.type == pygame.QUIT:
                 world.save_state()
                 return False, world
 
-            # ========================
-            # TECLAS
-            # ========================
+            # ----- teclado -----
             if event.type == pygame.KEYDOWN:
 
                 if event.key == pygame.K_g:
                     self.show_grid = not self.show_grid
 
-                if event.key == pygame.K_SPACE:
+                elif event.key == pygame.K_SPACE:
                     world.paused = not world.paused
 
-                if event.key == pygame.K_t:
+                elif event.key == pygame.K_t:
                     self.show_trails = not self.show_trails
 
-                if event.key == pygame.K_o:
+                elif event.key == pygame.K_o:
                     self.place_obstacle_mode = not self.place_obstacle_mode
 
-                if event.key == pygame.K_1:
+                elif event.key == pygame.K_1:
                     self.current_object_type = ObjectType.OBSTACLE
 
-                if event.key == pygame.K_2:
+                elif event.key == pygame.K_2:
                     self.current_object_type = ObjectType.FOOD
 
-                if event.key == pygame.K_3:
+                elif event.key == pygame.K_3:
                     self.current_object_type = ObjectType.DANGER
 
-            # ========================
-            # MOUSE
-            # ========================
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            # ----- mouse -----
+            elif event.type == pygame.MOUSEBUTTONDOWN:
 
-                mouse_pos = event.pos  # 🔥 siempre definir primero
+                mouse_pos = event.pos
 
-                # Scroll zoom
+                # zoom
                 if event.button == 4:
                     camera.zoom_in()
-
-                elif event.button == 5:
-                    camera.zoom_out()
-
-                # ========================
-                # CLICK DERECHO (BORRAR OBSTÁCULO)
-                # ========================
-                elif event.button == 3:
-
-                    world_x, world_y = camera.screen_to_world(
-                        mouse_pos[0],
-                        mouse_pos[1]
-                    )
-
-                    world.obstacles.remove_obstacle_at(world_x, world_y)
-
                     continue
 
-                # ========================
-                # CLICK IZQUIERDO
-                # ========================
-                elif event.button == 1:
+                if event.button == 5:
+                    camera.zoom_out()
+                    continue
 
-                    # ========================
-                    # CREAR OBSTÁCULO
-                    # ========================
+                world_x, world_y = camera.screen_to_world(
+                    mouse_pos[0],
+                    mouse_pos[1]
+                )
+
+                # borrar objeto
+                if event.button == 3:
+                    world.obstacles.remove_obstacle_at(world_x, world_y)
+                    continue
+
+                # click izquierdo
+                if event.button == 1:
+
+                    # crear objeto
                     if self.place_obstacle_mode:
-
-                        world_x, world_y = camera.screen_to_world(
-                            mouse_pos[0],
-                            mouse_pos[1]
-                        )
 
                         world.obstacles.add_obstacle(
                             world_x,
                             world_y,
                             obj_type=self.current_object_type
                         )
-
                         continue
 
-                    # ========================
-                    # PANEL
-                    # ========================
+                    # panel
                     panel.handle_event(event)
 
-                    # ========================
-                    # SELECCIONAR HORMIGA
-                    # ========================
+                    # seleccionar hormiga
                     for ant in world.ants:
 
                         ant_screen = camera.world_to_screen(ant.x, ant.y)
@@ -114,9 +98,7 @@ class InputHandler:
                             panel.set_selected_agent(ant)
                             break
 
-            # ========================
-            # UI (reset)
-            # ========================
+            # ----- UI -----
             world = ui.handle_event(
                 event,
                 world,
@@ -128,15 +110,15 @@ class InputHandler:
 
         return True, world
 
+    # ---------------------------------
+
     def handle_camera_movement(self, dt, camera, world):
 
-        # Si está en pausa, no mover cámara
         if world.paused:
             return
 
         keys = pygame.key.get_pressed()
 
-        # Ajustar movimiento según zoom
         zoom_factor = 1 / camera.zoom
         move_amount = camera.move_speed * zoom_factor * dt
 

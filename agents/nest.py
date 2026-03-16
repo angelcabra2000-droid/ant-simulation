@@ -6,31 +6,32 @@ class Nest:
     def __init__(self):
         self.x = 0
         self.y = 0
-        self.size = 0.1  # tamaño del nido en metros
+
+        # radio real del nido (metros)
+        self.radius = 0.1
 
     def draw(self, screen, camera):
 
         center = camera.world_to_screen(self.x, self.y)
 
-        size_pixels = self.size * camera.pixels_per_meter * camera.zoom
-        size_pixels = int(size_pixels)
+        radius_pixels = self.radius * camera.pixels_per_meter * camera.zoom
+        radius_pixels = int(radius_pixels)
 
         color = (255, 0, 0)
 
-        # Línea horizontal
+        # cruz interna (solo visual)
         pygame.draw.line(
             screen,
             color,
-            (center[0] - size_pixels, center[1]),
-            (center[0] + size_pixels, center[1]),
+            (center[0] - radius_pixels, center[1]),
+            (center[0] + radius_pixels, center[1]),
             2
         )
 
-        # Línea vertical
         pygame.draw.line(
             screen,
             color,
-            (center[0], center[1] - size_pixels),
-            (center[0], center[1] + size_pixels),
+            (center[0], center[1] - radius_pixels),
+            (center[0], center[1] + radius_pixels),
             2
         )

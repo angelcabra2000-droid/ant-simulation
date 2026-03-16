@@ -1,4 +1,5 @@
 import pygame
+import math
 from enviroment.object_type import ObjectType
 
 
@@ -26,23 +27,51 @@ class Obstacle:
         width_pixels = self.width * camera.pixels_per_meter * camera.zoom
         height_pixels = self.height * camera.pixels_per_meter * camera.zoom
 
-        rect = pygame.Rect(
-            screen_pos[0] - width_pixels/2,
-            screen_pos[1] - height_pixels/2,
-            width_pixels,
-            height_pixels
-        )
+        cx = screen_pos[0]
+        cy = screen_pos[1]
 
-        # Color según tipo
-        if self.type.name == "OBSTACLE":
-            color = (120,120,120)
+        # OBSTACULO → RECTANGULO MADERA
+        if self.type == ObjectType.OBSTACLE:
 
-        elif self.type.name == "FOOD":
-            color = (0,200,0)
+            color = (139, 94, 60)  # café madera
 
-        elif self.type.name == "DANGER":
-            color = (200,0,0)
+            rect = pygame.Rect(
+                cx - width_pixels/2,
+                cy - height_pixels/2,
+                width_pixels,
+                height_pixels
+            )
 
-        pygame.draw.rect(screen, color, rect)
+            pygame.draw.rect(screen, color, rect)
 
-    
+
+        # COMIDA → ROMBO
+        elif self.type == ObjectType.FOOD:
+
+            color = (34, 139, 34)  # verde hoja
+
+            points = [
+                (cx, cy - height_pixels/2),  # arriba
+                (cx + width_pixels/2, cy),   # derecha
+                (cx, cy + height_pixels/2),  # abajo
+                (cx - width_pixels/2, cy)    # izquierda
+            ]
+
+            pygame.draw.polygon(screen, color, points)
+
+
+        # PELIGRO → HEXAGONO
+        elif self.type == ObjectType.DANGER:
+
+            color = (200, 30, 30)
+
+            radius = width_pixels / 2
+            points = []
+
+            for i in range(6):
+                angle = math.radians(60 * i)
+                px = cx + radius * math.cos(angle)
+                py = cy + radius * math.sin(angle)
+                points.append((px, py))
+
+            pygame.draw.polygon(screen, color, points)

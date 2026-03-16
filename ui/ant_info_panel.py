@@ -4,77 +4,119 @@ from config.settings import PANEL_COLOR, TEXT_COLOR
 
 
 class AntInfoPanel:
-    def __init__(self, width=250):
+
+    def __init__(self, width=220):
+
         self.width = width
+        self.padding = 15
+
         self.selected_ant = None
         self.visible = False
 
-        self.font = pygame.font.SysFont(None, 24)
+        self.font = pygame.font.SysFont(None, 22)
 
         image_path = os.path.join("ui", "assets", "ant.png")
+
         if os.path.exists(image_path):
             self.image = pygame.image.load(image_path)
-            self.image = pygame.transform.scale(self.image, (150, 150))
+            self.image = pygame.transform.scale(self.image, (120, 120))
         else:
             self.image = None
 
         self.close_button_rect = None
 
+    # ---------------------
+
     def set_selected_agent(self, agent):
         self.selected_ant = agent
         self.visible = True
 
+    # ---------------------
+
     def handle_event(self, event):
+
         if not self.visible:
             return
 
         if event.type == pygame.MOUSEBUTTONDOWN:
+
             if self.close_button_rect and self.close_button_rect.collidepoint(event.pos):
                 self.visible = False
                 self.selected_ant = None
 
+    # ---------------------
+
     def draw(self, screen):
+
         if not self.visible or not self.selected_ant:
             return
 
         screen_width = screen.get_width()
-        screen_height = screen.get_height()
-
-        panel_rect = pygame.Rect(
-            screen_width - self.width, 0, self.width, screen_height
-        )
-
-        pygame.draw.rect(screen, PANEL_COLOR, panel_rect)
-
-        # ----- BOTÓN CERRAR -----
-        self.close_button_rect = pygame.Rect(
-            screen_width - 30, 10, 20, 20
-        )
-
-        pygame.draw.rect(screen, (200, 50, 50), self.close_button_rect)
-
-        close_text = self.font.render("X", True, (255, 255, 255))
-        screen.blit(close_text, (screen_width - 25, 10))
-
-        y_offset = 50
-
-        if self.image:
-            screen.blit(
-                self.image,
-                (screen_width - self.width + 50, 50)
-            )
-            y_offset += 170
 
         lines = [
             f"ID: {self.selected_ant.id}",
             f"State: {self.selected_ant.state}",
             f"Age: {self.selected_ant.age:.1f}s",
-            f"Energy: {self.selected_ant.energy:.0f}",
-            f"Pos: ({self.selected_ant.x:.2f}, {self.selected_ant.y:.2f}) m",
-            f"Vel: {self.selected_ant.speed:.2f} m/s",
+            f"Vel: {self.selected_ant.current_speed:.2f} m/s",
         ]
 
+        # ----- calcular altura dinámica -----
+
+        line_height = 28
+        image_height = 120 if self.image else 0
+
+        panel_height = (
+            self.padding * 2 +
+            image_height +
+            len(lines) * line_height +
+            20
+        )
+
+        panel_rect = pygame.Rect(
+            screen_width - self.width - 10,
+            10,
+            self.width,
+            panel_height
+        )
+
+        pygame.draw.rect(screen, PANEL_COLOR, panel_rect, border_radius=6)
+
+        # ----- botón cerrar -----
+
+        self.close_button_rect = pygame.Rect(
+            panel_rect.right - 25,
+            panel_rect.top + 5,
+            20,
+            20
+        )
+
+        pygame.draw.rect(screen, (200, 60, 60), self.close_button_rect)
+
+        close_text = self.font.render("X", True, (255, 255, 255))
+        screen.blit(close_text, (self.close_button_rect.x + 5, self.close_button_rect.y))
+
+        y_offset = panel_rect.top + self.padding + 10
+
+        # ----- imagen -----
+
+        if self.image:
+
+            screen.blit(
+                self.image,
+                (panel_rect.centerx - 60, y_offset)
+            )
+
+            y_offset += image_height + 10
+
+        # ----- texto -----
+
         for line in lines:
+
             text = self.font.render(line, True, TEXT_COLOR)
-            screen.blit(text, (screen_width - self.width + 20, y_offset))
-            y_offset += 30
+
+            screen.blit(
+                text,
+                (panel_rect.left + self.padding, y_offset)
+            )
+
+            y_offset += line_height
