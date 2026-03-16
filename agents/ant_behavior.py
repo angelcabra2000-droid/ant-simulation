@@ -51,11 +51,22 @@ class AntBehavior:
 
             ant.angle = math.atan2(dy, dx)
 
+            # si llega a la comida
             if AntBehavior.circle_rect_collision(ant, ant.target):
 
-                ant.carrying_food = True
-                ant.state = "ReturningFood"
-                ant.target = None
+                if not ant.is_eating:
+                    ant.is_eating = True
+                    ant.eating_timer = ant.eating_time
+
+                ant.eating_timer -= dt
+
+                if ant.eating_timer <= 0:
+                    ant.is_eating = False
+                    ant.carrying_food = True
+                    ant.state = "ReturningFood"
+                    ant.target = None
+
+                return
 
         # ---- REGRESAR AL NIDO ----
         elif ant.state == "ReturningFood":

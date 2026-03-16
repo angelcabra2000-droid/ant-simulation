@@ -80,6 +80,14 @@ class Ant:
         self.trail_timer = 0
         self.trail_interval = 1
 
+        # -------------------
+        # TIEMPO COMIENDO
+        # -------------------
+
+        self.eating_timer = 0
+        self.eating_time = 3
+        self.is_eating = False
+
     # ---------------------------------
 
     def update(self, dt, world):
@@ -108,3 +116,15 @@ class Ant:
         radius_pixels = max(int(radius_pixels), 1)
 
         pygame.draw.circle(screen, ANT_COLOR, screen_pos, radius_pixels)
+
+        # ---- COMIDA QUE CARGA ----
+        if self.state == "ReturningFood":
+
+            food_offset = radius_pixels * 1.5
+
+            food_x = screen_pos[0] + math.cos(self.angle) * food_offset
+            food_y = screen_pos[1] + math.sin(self.angle) * food_offset
+
+            food_radius = max(2, radius_pixels // 2)
+
+            pygame.draw.circle(screen, (0, 220, 0), (int(food_x), int(food_y)), food_radius)
