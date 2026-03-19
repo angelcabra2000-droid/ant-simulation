@@ -1,5 +1,6 @@
 import pygame
 from enviroment.object_type import ObjectType
+from enviroment.object_size import ObjectSize
 
 
 class InputHandler:
@@ -13,6 +14,7 @@ class InputHandler:
         # modo de creación de objetos
         self.place_obstacle_mode = False
         self.current_object_type = ObjectType.OBSTACLE
+        self.current_size = ObjectSize.MEDIUM
 
     # ---------------------------------
 
@@ -49,6 +51,15 @@ class InputHandler:
                 elif event.key == pygame.K_3:
                     self.current_object_type = ObjectType.DANGER
 
+                elif event.key == pygame.K_z:
+                    self.current_size = ObjectSize.SMALL
+
+                elif event.key == pygame.K_x:
+                    self.current_size = ObjectSize.MEDIUM
+
+                elif event.key == pygame.K_c:
+                    self.current_size = ObjectSize.LARGE
+
             # ----- mouse -----
             elif event.type == pygame.MOUSEBUTTONDOWN:
 
@@ -79,9 +90,13 @@ class InputHandler:
                     # crear objeto
                     if self.place_obstacle_mode:
 
+                        width, height = self.current_size.value
+
                         world.obstacles.add_obstacle(
                             world_x,
                             world_y,
+                            width=width,
+                            height=height,
                             obj_type=self.current_object_type
                         )
                         continue

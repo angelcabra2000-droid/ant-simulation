@@ -56,7 +56,39 @@ def main():
         if input_handler.show_grid:
             grid.draw(screen, camera)
 
-        world.draw(screen, camera, input_handler.show_trails)
+        # =========================
+        # 👻 PREVIEW DATA
+        # =========================
+        preview_data = None
+
+        if input_handler.place_obstacle_mode:
+
+            mouse_x, mouse_y = pygame.mouse.get_pos()
+
+            world_x, world_y = camera.screen_to_world(
+                mouse_x,
+                mouse_y
+            )
+
+            width, height = input_handler.current_size.value
+
+            preview_data = (
+                world_x,
+                world_y,
+                width,
+                height,
+                input_handler.current_object_type
+            )
+
+        # =========================
+        # 🌍 DRAW WORLD + PREVIEW
+        # =========================
+        world.draw(
+            screen,
+            camera,
+            input_handler.show_trails,
+            preview_data
+        )
 
         ui.draw(screen, world, input_handler)
 

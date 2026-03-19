@@ -4,6 +4,7 @@ from agents.ant import Ant
 from agents.nest import Nest
 from core.save_system import save_world, load_world, reset_world
 from enviroment.obstacle_manager import ObstacleManager
+from enviroment.obstacle import Obstacle
 
 class World:
 
@@ -59,7 +60,7 @@ class World:
     # RENDER
     # =========================
 
-    def draw(self, screen, camera, show_trails=True):
+    def draw(self, screen, camera, show_trails=True, preview_data=None):
 
         self.nest.draw(screen, camera)
 
@@ -68,6 +69,15 @@ class World:
         for ant in self.ants:
             ant.draw(screen, camera, show_trails)
 
+        # =========================
+        # PREVIEW (fantasma)
+        # =========================
+        if preview_data is not None:
+
+            x, y, width, height, obj_type = preview_data
+
+            preview = Obstacle(x, y, width, height, obj_type)
+            preview.draw_preview(screen, camera)
     # =========================
     # SISTEMA DE GUARDADO
     # =========================

@@ -28,4 +28,3 @@ class ObstacleManager:
                 self.obstacles.remove(obstacle)
                 return
             
-    

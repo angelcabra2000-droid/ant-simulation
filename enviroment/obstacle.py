@@ -75,3 +75,59 @@ class Obstacle:
                 points.append((px, py))
 
             pygame.draw.polygon(screen, color, points)
+
+    def draw_preview(self, screen, camera):
+
+        screen_pos = camera.world_to_screen(self.x, self.y)
+
+        width_pixels = self.width * camera.pixels_per_meter * camera.zoom
+        height_pixels = self.height * camera.pixels_per_meter * camera.zoom
+
+        cx = screen_pos[0]
+        cy = screen_pos[1]
+
+        # superficie transparente
+        preview_surface = pygame.Surface((width_pixels, height_pixels), pygame.SRCALPHA)
+
+        color = (255, 255, 255, 100)  # blanco transparente
+
+        # RECT
+        if self.type == ObjectType.OBSTACLE:
+
+            pygame.draw.rect(
+                preview_surface,
+                color,
+                (0, 0, width_pixels, height_pixels)
+            )
+
+        # ROMBO
+        elif self.type == ObjectType.FOOD:
+
+            points = [
+                (width_pixels/2, 0),
+                (width_pixels, height_pixels/2),
+                (width_pixels/2, height_pixels),
+                (0, height_pixels/2)
+            ]
+
+            pygame.draw.polygon(preview_surface, color, points)
+
+        # HEXAGONO
+        elif self.type == ObjectType.DANGER:
+
+            radius = width_pixels / 2
+            points = []
+
+            for i in range(6):
+                angle = math.radians(60 * i)
+                px = width_pixels/2 + radius * math.cos(angle)
+                py = height_pixels/2 + radius * math.sin(angle)
+                points.append((px, py))
+
+            pygame.draw.polygon(preview_surface, color, points)
+
+        # dibujar en pantalla
+        screen.blit(
+            preview_surface,
+            (cx - width_pixels/2, cy - height_pixels/2)
+        )
