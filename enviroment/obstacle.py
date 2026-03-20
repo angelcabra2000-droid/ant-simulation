@@ -15,14 +15,19 @@ class Obstacle:
         # ------------------------
         # VIDA SEGÚN TIPO
         # ------------------------
+        self.type = obj_type
+        self.width = width
+        self.height = height
+
+        # 🔴 VIDA SEGÚN TAMAÑO
         if self.type == ObjectType.FOOD:
-            self.health = 100
+            self.health = self.width * 1000
 
         elif self.type == ObjectType.DANGER:
-            self.health = 150
+            self.health = self.width * 1500
 
         else:
-            self.health = None  # obstáculos no tienen vida
+            self.health = None  # obstáculos normales no tienen vida
         
 
     @property

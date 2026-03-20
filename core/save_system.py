@@ -34,8 +34,9 @@ def save_world(world):
             "x": obs.x,
             "y": obs.y,
             "width": obs.width,
-            "height": obs.height, 
-            "type": obs.type.name
+            "height": obs.height,
+            "type": obs.type.name,
+            "health": getattr(obs, "health", None)  # 🔴 clave
         })
 
     data = {
@@ -80,13 +81,17 @@ def load_world(world):
     world.obstacles.obstacles.clear()
 
     for obs_data in data.get("obstacles", []):
-        world.obstacles.add_obstacle(
+        obj = world.obstacles.add_obstacle(
             obs_data["x"],
             obs_data["y"],
             obs_data["width"],
             obs_data["height"],
             ObjectType[obs_data["type"]]
         )
+
+        # 🔴 restaurar vida
+        if "health" in obs_data and obs_data["health"] is not None:
+            obj.health = obs_data["health"]
 
 def reset_world(world):
 

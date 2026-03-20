@@ -8,6 +8,7 @@ from core.grid import Grid
 from core.input_handler import InputHandler
 from ui.ant_info_panel import AntInfoPanel
 from ui.world_ui import WorldUI
+from ui.objectInfoPanel import ObjectInfoPanel
 
 
 def main():
@@ -24,6 +25,7 @@ def main():
     camera = Camera(PIXELS_PER_METER, SCREEN_WIDTH, SCREEN_HEIGHT, world)
     grid = Grid(world)
     panel = AntInfoPanel()
+    object_panel = ObjectInfoPanel()
     ui = WorldUI(SCREEN_WIDTH)
     input_handler = InputHandler()
 
@@ -39,6 +41,7 @@ def main():
             camera,
             grid,
             panel,
+            object_panel,
             ui,
             WORLD_WIDTH_METERS,
             WORLD_HEIGHT_METERS
@@ -93,6 +96,7 @@ def main():
         ui.draw(screen, world, input_handler)
 
         panel.draw(screen)
+        object_panel.draw(screen)
 
         pygame.display.flip()
 

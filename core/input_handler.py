@@ -18,8 +18,7 @@ class InputHandler:
 
     # ---------------------------------
 
-    def handle_events(self, events, world, camera, grid, panel, ui, world_width, world_height):
-
+    def handle_events(self, events, world, camera, grid, panel, object_panel, ui, world_width, world_height):
         for event in events:
 
             # ----- cerrar programa -----
@@ -101,17 +100,37 @@ class InputHandler:
                         )
                         continue
 
-                    # panel
+                    # manejar botones de paneles
                     panel.handle_event(event)
+                    object_panel.handle_event(event)
 
-                    # seleccionar hormiga
-                    for ant in world.ants:
+                    selected = False
 
-                        ant_screen = camera.world_to_screen(ant.x, ant.y)
+                    # ------------------------
+                    # 🔴 SELECCIONAR OBJETO
+                    # ------------------------
+                    for obj in world.obstacles.obstacles:
 
-                        if pygame.math.Vector2(mouse_pos).distance_to(ant_screen) < 10:
-                            panel.set_selected_agent(ant)
+                        obj_screen = camera.world_to_screen(obj.x, obj.y)
+
+                        if pygame.math.Vector2(mouse_pos).distance_to(obj_screen) < 15:
+                            object_panel.set_selected_object(obj)
+                            panel.visible = False
+                            selected = True
                             break
+
+                    # ------------------------
+                    # 🔴 SELECCIONAR HORMIGA
+                    # ------------------------
+                    if not selected:
+                        for ant in world.ants:
+
+                            ant_screen = camera.world_to_screen(ant.x, ant.y)
+
+                            if pygame.math.Vector2(mouse_pos).distance_to(ant_screen) < 10:
+                                panel.set_selected_agent(ant)
+                                object_panel.visible = False
+                                break
 
             # ----- UI -----
             world = ui.handle_event(

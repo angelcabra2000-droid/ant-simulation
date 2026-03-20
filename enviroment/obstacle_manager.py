@@ -13,6 +13,8 @@ class ObstacleManager:
 
         self.obstacles.append(obstacle)
 
+        return obstacle
+
     def draw(self, screen, camera):
 
         for obstacle in self.obstacles:
