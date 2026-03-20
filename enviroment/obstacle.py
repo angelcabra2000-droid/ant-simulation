@@ -12,6 +12,19 @@ class Obstacle:
         self.height = height
         self.type = obj_type
 
+        # ------------------------
+        # VIDA SEGÚN TIPO
+        # ------------------------
+        if self.type == ObjectType.FOOD:
+            self.health = 100
+
+        elif self.type == ObjectType.DANGER:
+            self.health = 150
+
+        else:
+            self.health = None  # obstáculos no tienen vida
+        
+
     @property
     def half_width(self):
         return self.width / 2

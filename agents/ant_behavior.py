@@ -1,5 +1,6 @@
 import random
 import math
+from enviroment.object_type import ObjectType
 
 
 class AntBehavior:
@@ -14,6 +15,7 @@ class AntBehavior:
             if ant.target not in ant.world.obstacles.obstacles:
                 ant.target = None
                 ant.state = "Exploring"
+                ant.is_eating = False
 
         # ---- ENVEJECIMIENTO ----
         ant.age += dt
@@ -21,7 +23,7 @@ class AntBehavior:
 
         obj = AntBehavior.detect_objects(ant)
 
-        if ant.state == "Exploring" and obj:
+        if obj and ant.target is None:
             AntBehavior.react_to_object(ant, obj)
 
         # ------------------------
@@ -41,28 +43,41 @@ class AntBehavior:
         # ---- IR A COMIDA ----
         elif ant.state == "GoingToFood":
 
-    # si se perdió el target, volver a explorar
             if ant.target is None:
                 ant.state = "Exploring"
                 return
 
             dx = ant.target.x - ant.x
             dy = ant.target.y - ant.y
-
             ant.angle = math.atan2(dy, dx)
 
-            # si llega a la comida
-            if AntBehavior.circle_rect_collision(ant, ant.target):
+            # SOLO SI NO HA TERMINADO DE COMER
+            if not ant.carrying_food and AntBehavior.circle_rect_collision(ant, ant.target):
 
                 if not ant.is_eating:
                     ant.is_eating = True
                     ant.eating_timer = ant.eating_time
 
+                ant.current_speed = 0
                 ant.eating_timer -= dt
 
                 if ant.eating_timer <= 0:
+
                     ant.is_eating = False
                     ant.carrying_food = True
+
+                    if ant.target:
+                        ant.target.health -= 20
+
+                        if ant.target.health <= 0:
+                            if ant.target in ant.world.obstacles.obstacles:
+                                ant.world.obstacles.obstacles.remove(ant.target)
+
+                    # 🔴 EMPUJÓN PARA DESPEGARSE
+                    push = ant.radius * 2
+                    ant.x += math.cos(ant.angle) * push
+                    ant.y += math.sin(ant.angle) * push
+
                     ant.state = "ReturningFood"
                     ant.target = None
 
@@ -76,20 +91,14 @@ class AntBehavior:
 
             desired_angle = math.atan2(dy, dx)
 
-            # diferencia angular
             angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
-
-            # girar suavemente hacia el nido
             ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
 
-            # ruido ocasional
             ant.return_turn_timer += dt
 
             if ant.return_turn_timer >= ant.return_turn_interval:
-
                 ant.return_turn_timer = 0
                 ant.return_turn_interval = random.uniform(0.2, 0.6)
-
                 ant.angle += random.uniform(-0.4, 0.4)
 
             dist = math.sqrt(ant.x * ant.x + ant.y * ant.y)
@@ -114,7 +123,6 @@ class AntBehavior:
 
                 dx = ant.target.x - ant.x
                 dy = ant.target.y - ant.y
-
                 ant.angle = math.atan2(dy, dx)
 
                 if AntBehavior.circle_rect_collision(ant, ant.target):
@@ -125,11 +133,20 @@ class AntBehavior:
                     )
 
                     push = ant.radius * 4
-
                     ant.x += math.cos(angle_away) * push
                     ant.y += math.sin(angle_away) * push
 
                     ant.angle = angle_away + random.uniform(-0.5, 0.5)
+
+                    if ant.target:
+                        ant.target.health -= 10
+
+                        if ant.target.health <= 0:
+                            if ant.target in ant.world.obstacles.obstacles:
+                                ant.world.obstacles.obstacles.remove(ant.target)
+                                ant.target = None
+                                ant.state = "Exploring"
+                                return
 
         # -------------------
         # EVITAR OBSTÁCULOS
@@ -141,10 +158,13 @@ class AntBehavior:
         # -------------------
         if ant.state != "WaitingInNest":
 
-            speed = ant.speed
+            if ant.is_eating:
+                speed = 0
+            else:
+                speed = ant.speed
 
-            if ant.state == "ReturningFood":
-                speed *= 0.5
+                if ant.state == "ReturningFood":
+                    speed *= 0.5
 
             ant.current_speed = speed
 
@@ -164,7 +184,6 @@ class AntBehavior:
         # -------------------
         # LÍMITES DEL MUNDO
         # -------------------
-
         if ant.x < -world.half_width:
             ant.x = -world.half_width
             ant.angle = math.pi - ant.angle
@@ -181,11 +200,6 @@ class AntBehavior:
             ant.y = world.half_height
             ant.angle = -ant.angle
 
-
-    # ---------------------------------
-    # DETECTAR OBJETOS
-    # ---------------------------------
-
     @staticmethod
     def detect_objects(ant):
 
@@ -194,7 +208,11 @@ class AntBehavior:
 
         for obj in ant.world.obstacles.obstacles:
 
-            if obj.type.name not in ["FOOD", "DANGER"]:
+            # 🔴 ignorar comida si ya lleva
+            if obj.type == ObjectType.FOOD and ant.carrying_food:
+                continue
+
+            if obj.type not in [ObjectType.FOOD, ObjectType.DANGER]:
                 continue
 
             dx = obj.x - ant.x
@@ -206,7 +224,6 @@ class AntBehavior:
                 continue
 
             angle_to_obj = math.atan2(dy, dx)
-
             angle_diff = abs((angle_to_obj - ant.angle + math.pi) % (2 * math.pi) - math.pi)
 
             if angle_diff > ant.fov / 2:
@@ -218,26 +235,16 @@ class AntBehavior:
 
         return closest
 
-
-    # ---------------------------------
-    # REACCIONAR A OBJETOS
-    # ---------------------------------
-
     @staticmethod
     def react_to_object(ant, obj):
 
-        if obj.type.name == "FOOD":
+        if obj.type == ObjectType.FOOD:
             ant.target = obj
             ant.state = "GoingToFood"
 
-        elif obj.type.name == "DANGER":
+        elif obj.type == ObjectType.DANGER:
             ant.target = obj
             ant.state = "Attacking"
-
-
-    # ---------------------------------
-    # COLISIÓN CÍRCULO - RECTÁNGULO
-    # ---------------------------------
 
     @staticmethod
     def circle_rect_collision(ant, rect):
@@ -255,11 +262,6 @@ class AntBehavior:
 
         return dx * dx + dy * dy < ant.radius * ant.radius
 
-
-    # ---------------------------------
-    # EVITAR OBSTÁCULOS
-    # ---------------------------------
-
     @staticmethod
     def avoid_obstacles(ant):
 
@@ -270,7 +272,7 @@ class AntBehavior:
 
         for obj in ant.world.obstacles.obstacles:
 
-            if obj.type.name != "OBSTACLE":
+            if obj.type != ObjectType.OBSTACLE:
                 continue
 
             left = obj.x - obj.width / 2
