@@ -55,6 +55,7 @@ class AntInfoPanel:
 
         lines = [
             f"ID: {self.selected_ant.id}",
+            f"Caste: {self.selected_ant.caste}",  # 🔥 NUEVO
             f"State: {self.selected_ant.state}",
             f"Age: {self.selected_ant.age:.1f}s",
             f"Vel: {self.selected_ant.current_speed:.2f} m/s",
@@ -112,7 +113,15 @@ class AntInfoPanel:
 
         for line in lines:
 
-            text = self.font.render(line, True, TEXT_COLOR)
+            color = TEXT_COLOR
+
+            if "Caste" in line:
+                if self.selected_ant.caste == "Worker":
+                    color = (100, 200, 255)  # azul
+                elif self.selected_ant.caste == "Soldier":
+                    color = (255, 100, 100)  # rojo
+
+            text = self.font.render(line, True, color)
 
             screen.blit(
                 text,

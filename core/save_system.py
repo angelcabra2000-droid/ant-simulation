@@ -3,6 +3,7 @@ import os
 
 from collections import deque
 from enviroment.object_type import ObjectType
+from agents.ant_caste import AntCaste
 
 
 SAVE_FILE = "save.json"
@@ -20,6 +21,9 @@ def save_world(world):
             "angle": ant.angle,
 
             "state": ant.state,
+            "carrying_food": ant.carrying_food,
+
+            "caste": ant.caste.name,  # 🔥 NUEVO
 
             "current_speed": ant.current_speed,
             "nest_timer": ant.nest_timer,
@@ -53,12 +57,16 @@ def load_world(world):
     if not os.path.exists(SAVE_FILE):
         return
 
+    from agents.ant_caste import AntCaste
+
     with open(SAVE_FILE, "r") as f:
         data = json.load(f)
 
     world.world_time = data.get("world_time", 0)
 
-    # cargar hormigas
+    # -----------------------------
+    # CARGAR HORMIGAS
+    # -----------------------------
     for ant, ant_data in zip(world.ants, data.get("ants", [])):
 
         ant.age = ant_data["age"]
@@ -67,17 +75,47 @@ def load_world(world):
         ant.y = ant_data["y"]
         ant.angle = ant_data["angle"]
 
-        ant.state = ant_data.get("state", "Exploring")
+        # -----------------------------
+        # 🧬 CASTA
+        # -----------------------------
+        saved_caste = ant_data.get("caste", "WORKER")
+        ant.caste = AntCaste[saved_caste]
 
-        ant.current_speed = ant_data.get("current_speed", ant.speed)
+        # 🔥 aplicar stats correctamente
+        ant.apply_caste_stats()
 
+        # -----------------------------
+        # 🔥 VALIDACIÓN DE ESTADO
+        # -----------------------------
+        saved_state = ant_data.get("state", "Exploring")
+
+        states_need_target = ["GoingToFood", "Attacking"]
+
+        if saved_state in states_need_target:
+            ant.state = "Exploring"
+            ant.target = None
+        else:
+            ant.state = saved_state
+            ant.target = None
+
+        # -----------------------------
+        # FLAGS
+        # -----------------------------
+        ant.is_eating = False
+        ant.carrying_food = ant_data.get("carrying_food", False)
+
+        # -----------------------------
+        # RESTO
+        # -----------------------------
         ant.nest_timer = ant_data.get("nest_timer", 0)
         ant.return_turn_timer = ant_data.get("return_turn_timer", 0)
         ant.turn_timer = ant_data.get("turn_timer", 0)
 
         ant.trail = deque(ant_data.get("trail", []), maxlen=20000)
 
-    # cargar obstáculos
+    # -----------------------------
+    # OBSTÁCULOS
+    # -----------------------------
     world.obstacles.obstacles.clear()
 
     for obs_data in data.get("obstacles", []):
@@ -89,7 +127,6 @@ def load_world(world):
             ObjectType[obs_data["type"]]
         )
 
-        # 🔴 restaurar vida
         if "health" in obs_data and obs_data["health"] is not None:
             obj.health = obs_data["health"]
 

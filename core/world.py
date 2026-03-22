@@ -1,10 +1,12 @@
 import os
 
 from agents.ant import Ant
+from agents.ant_caste import AntCaste
 from agents.nest import Nest
 from core.save_system import save_world, load_world, reset_world
 from enviroment.obstacle_manager import ObstacleManager
 from enviroment.obstacle import Obstacle
+
 
 class World:
 
@@ -17,33 +19,43 @@ class World:
         self.half_width = width_meters / 2
         self.half_height = height_meters / 2
 
-        # Tiempo global del mundo
+        # Tiempo global
         self.world_time = 0.0
 
-        # Objetos del mundo
+        # Objetos
         self.nest = Nest()
         self.obstacles = ObstacleManager()
 
         # Agentes
         self.ants = []
 
-        # Crear primera hormiga
-        self.create_initial_ant()
+        # 👇 Crear 2 hormigas (Worker + Soldier)
+        self.create_initial_ants()
 
-        # Control simulación
+        # Control
         self.paused = False
 
     # =========================
     # CREACIÓN DE AGENTES
     # =========================
 
-    def create_initial_ant(self):
+    def create_initial_ants(self):
 
-        ant = Ant(1, self)
-        self.ants.append(ant)
+        # 🐜 WORKER
+        worker = Ant(0, self)
+        worker.caste = AntCaste.WORKER
+        worker.apply_caste_stats()
+
+        # 🐜 SOLDIER
+        soldier = Ant(1, self)
+        soldier.caste = AntCaste.SOLDIER
+        soldier.apply_caste_stats()
+
+        self.ants.append(worker)
+        self.ants.append(soldier)
 
     # =========================
-    # UPDATE DEL MUNDO
+    # UPDATE
     # =========================
 
     def update(self, dt):
@@ -57,41 +69,35 @@ class World:
             ant.update(dt, self)
 
     # =========================
-    # RENDER
+    # DRAW
     # =========================
 
     def draw(self, screen, camera, show_trails=True, preview_data=None):
 
         self.nest.draw(screen, camera)
-
         self.obstacles.draw(screen, camera)
 
         for ant in self.ants:
             ant.draw(screen, camera, show_trails)
 
-        # =========================
-        # PREVIEW (fantasma)
-        # =========================
+        # 👻 PREVIEW
         if preview_data is not None:
-
             x, y, width, height, obj_type = preview_data
-
             preview = Obstacle(x, y, width, height, obj_type)
             preview.draw_preview(screen, camera)
+
     # =========================
-    # SISTEMA DE GUARDADO
+    # SAVE / LOAD
     # =========================
 
     def save_state(self):
-
         save_world(self)
 
     def load_state(self):
-
         load_world(self)
 
     # =========================
-    # RESET DEL MUNDO
+    # RESET
     # =========================
 
     def reset(self):
@@ -99,9 +105,9 @@ class World:
         reset_world()
 
         self.world_time = 0
-
         self.nest = Nest()
 
         self.ants.clear()
 
-        self.create_initial_ant()
+        # 👇 recrear correctamente
+        self.create_initial_ants()

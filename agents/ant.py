@@ -4,8 +4,10 @@ import pygame
 from collections import deque
 
 from config.settings import ANT_COLOR
-from agents.ant_behavior import AntBehavior
-
+#from agents.ant_behavior import AntBehavior
+from agents.worker_behavior import WorkerBehavior
+from agents.soldier_behavior import SoldierBehavior
+from agents.ant_caste import AntCaste
 
 class Ant:
 
@@ -13,6 +15,13 @@ class Ant:
 
         self.id = ant_id
         self.world = world
+        self.caste = None
+
+        # -------------------
+        # VIDA
+        # -------------------
+        self.age = 0
+        self.energy = 100
 
         # -------------------
         # ESTADO
@@ -34,9 +43,9 @@ class Ant:
         # -------------------
 
         self.angle = random.uniform(0, 2 * math.pi)
-        self.speed = 0.07
         self.turn_speed = 3
-        self.current_speed = self.speed
+        self.speed = 0.0
+        self.current_speed = 0.0
 
         # -------------------
         # PERCEPCIÓN
@@ -44,12 +53,6 @@ class Ant:
 
         self.vision_radius = 0.5
         self.fov = math.pi / 2
-
-        # -------------------
-        # CUERPO
-        # -------------------
-
-        self.radius = 0.004
 
         # -------------------
         # EXPLORACIÓN
@@ -88,17 +91,28 @@ class Ant:
         self.eating_time = 3
         self.is_eating = False
 
+        if self.caste is not None:
+            self.apply_caste_stats()
+
     # ---------------------------------
 
+
     def update(self, dt, world):
-        AntBehavior.update(self, dt, world)
+
+        if self.caste == AntCaste.WORKER:
+            WorkerBehavior.update(self, dt, world)
+
+        elif self.caste == AntCaste.SOLDIER:
+            SoldierBehavior.update(self, dt, world)
+
+        self.trail.append((self.x, self.y))
 
     # ---------------------------------
 
     def draw(self, screen, camera, show_trail=True):
 
         # ---- TRAIL ----
-        if show_trail and len(self.trail) > 1:
+        if show_trail and len(self.trail) > 10:
 
             points = []
             trail_to_draw = list(self.trail)[-1000:]
@@ -115,8 +129,17 @@ class Ant:
         radius_pixels = self.radius * camera.pixels_per_meter * camera.zoom
         radius_pixels = max(int(radius_pixels), 1)
 
-        pygame.draw.circle(screen, ANT_COLOR, screen_pos, radius_pixels)
+        # ---- COLOR SEGÚN CASTA ----
+        if self.caste == AntCaste.WORKER:
+            color = (0, 200, 0)
 
+        elif self.caste == AntCaste.SOLDIER:
+            color = (200, 50, 50)
+
+        else:
+            color = (180, 180, 180)  # fallback
+
+        pygame.draw.circle(screen, color, screen_pos, radius_pixels)
         # ---- COMIDA QUE CARGA ----
         if self.state == "ReturningFood":
 
@@ -128,3 +151,13 @@ class Ant:
             food_radius = max(2, radius_pixels // 2)
 
             pygame.draw.circle(screen, (0, 220, 0), (int(food_x), int(food_y)), food_radius)
+
+    def apply_caste_stats(self):
+        if self.caste == AntCaste.WORKER:
+            self.radius = 0.008
+            self.speed = 0.09
+        elif self.caste == AntCaste.SOLDIER:
+            self.radius = 0.012
+            self.speed = 0.06
+
+        self.current_speed = self.speed
