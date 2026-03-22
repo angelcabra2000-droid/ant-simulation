@@ -72,13 +72,34 @@ class World:
     # DRAW
     # =========================
 
-    def draw(self, screen, camera, show_trails=True, preview_data=None):
+    def draw(self, screen, camera, show_trails=True, preview_data=None, panel=None, only_selected_trail=False):
 
         self.nest.draw(screen, camera)
         self.obstacles.draw(screen, camera)
 
+        selected_ant = panel.selected_ant if panel and panel.visible else None
+
         for ant in self.ants:
-            ant.draw(screen, camera, show_trails)
+
+            # 🔹 decidir si dibujar trail
+            if only_selected_trail:
+                show_trail_for_ant = (
+                    show_trails and
+                    ant == selected_ant
+                )
+            else:
+                show_trail_for_ant = show_trails
+
+            # 🔹 saber si está seleccionada
+            is_selected = (ant == selected_ant)
+
+            ant.draw(
+                screen,
+                camera,
+                show_trail_for_ant,
+                is_selected=is_selected,
+                only_selected_mode=only_selected_trail
+            )
 
         # 👻 PREVIEW
         if preview_data is not None:

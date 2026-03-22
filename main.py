@@ -90,7 +90,9 @@ def main():
             screen,
             camera,
             input_handler.show_trails,
-            preview_data
+            preview_data,
+            panel,
+            input_handler.only_selected_trail
         )
 
         ui.draw(screen, world, input_handler)

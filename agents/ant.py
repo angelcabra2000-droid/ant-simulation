@@ -79,7 +79,7 @@ class Ant:
         # TRAIL
         # -------------------
 
-        self.trail = deque(maxlen=2000)
+        self.trail = deque(maxlen=5000)
         self.trail_timer = 0
         self.trail_interval = 1
 
@@ -105,11 +105,15 @@ class Ant:
         elif self.caste == AntCaste.SOLDIER:
             SoldierBehavior.update(self, dt, world)
 
-        self.trail.append((self.x, self.y))
+        self.trail_timer += dt
+
+        if self.trail_timer >= self.trail_interval:
+            self.trail.append((self.x, self.y))
+            self.trail_timer = 0
 
     # ---------------------------------
 
-    def draw(self, screen, camera, show_trail=True):
+    def draw(self, screen, camera, show_trail=True, is_selected=False, only_selected_mode=False):
 
         # ---- TRAIL ----
         if show_trail and len(self.trail) > 10:
@@ -120,27 +124,29 @@ class Ant:
             for x, y in trail_to_draw:
                 points.append(camera.world_to_screen(x, y))
 
-            pygame.draw.lines(screen, (180, 180, 180), False, points, 2)
+            pygame.draw.lines(screen, (120, 120, 120), False, points, 2)
 
-        
-        # ---- POSICIÓN EN PANTALLA ----
+        # 👁️ CAMPO DE VISIÓN (🔥 AQUÍ VA, NO ABAJO)
+        if is_selected and only_selected_mode and show_trail:
+            self.draw_vision(screen, camera)
+
+        # ---- POSICIÓN ----
         screen_pos = camera.world_to_screen(self.x, self.y)
 
         radius_pixels = self.radius * camera.pixels_per_meter * camera.zoom
         radius_pixels = max(int(radius_pixels), 1)
 
-        # ---- COLOR SEGÚN CASTA ----
+        # ---- COLOR ----
         if self.caste == AntCaste.WORKER:
             color = (0, 200, 0)
-
         elif self.caste == AntCaste.SOLDIER:
             color = (200, 50, 50)
-
         else:
-            color = (180, 180, 180)  # fallback
+            color = (180, 180, 180)
 
         pygame.draw.circle(screen, color, screen_pos, radius_pixels)
-        # ---- COMIDA QUE CARGA ----
+
+        # ---- COMIDA ----
         if self.state == "ReturningFood":
 
             food_offset = radius_pixels * 1.5
@@ -152,12 +158,57 @@ class Ant:
 
             pygame.draw.circle(screen, (0, 220, 0), (int(food_x), int(food_y)), food_radius)
 
+
+    def draw_vision(self, screen, camera):
+
+        screen_pos = camera.world_to_screen(self.x, self.y)
+
+        radius = int(self.vision_radius * camera.pixels_per_meter * camera.zoom)
+        radius = max(radius, 20)
+
+        # superficie transparente
+        surface = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+
+        center = (radius, radius)
+
+        start_angle = self.angle - self.fov / 2
+        end_angle = self.angle + self.fov / 2
+
+        points = [center]
+
+        steps = 30  # suavidad del cono
+
+        for i in range(steps + 1):
+            t = i / steps
+            angle = start_angle + (end_angle - start_angle) * t
+
+            x = center[0] + math.cos(angle) * radius
+            y = center[1] + math.sin(angle) * radius
+
+            points.append((x, y))
+
+        # 🎨 color según casta (con transparencia)
+        if self.caste == AntCaste.WORKER:
+            fill_color = (100, 255, 100, 50)
+            border_color = (100, 255, 100, 120)
+        else:
+            fill_color = (255, 100, 100, 50)
+            border_color = (255, 100, 100, 120)
+
+        # 🔥 cono sólido
+        pygame.draw.polygon(surface, fill_color, points)
+
+        # 🔥 borde del cono
+        pygame.draw.polygon(surface, border_color, points, 2)
+
+        # dibujar en pantalla
+        screen.blit(surface, (screen_pos[0] - radius, screen_pos[1] - radius))
     def apply_caste_stats(self):
         if self.caste == AntCaste.WORKER:
             self.radius = 0.008
             self.speed = 0.09
         elif self.caste == AntCaste.SOLDIER:
             self.radius = 0.012
-            self.speed = 0.06
+            self.speed = 0.07
 
         self.current_speed = self.speed

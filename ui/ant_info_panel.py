@@ -55,7 +55,7 @@ class AntInfoPanel:
 
         lines = [
             f"ID: {self.selected_ant.id}",
-            f"Caste: {self.selected_ant.caste}",  # 🔥 NUEVO
+            f"Caste: {self.selected_ant.caste.name}",  # 🔥 NUEVO
             f"State: {self.selected_ant.state}",
             f"Age: {self.selected_ant.age:.1f}s",
             f"Vel: {self.selected_ant.current_speed:.2f} m/s",

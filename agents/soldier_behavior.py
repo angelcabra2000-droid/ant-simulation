@@ -24,7 +24,7 @@ class SoldierBehavior:
 
             if ant.turn_timer >= 0.3:
                 ant.turn_timer = 0
-                ant.angle += random.uniform(-math.pi/3, math.pi/3)
+                ant.angle += random.uniform(-math.pi/6, math.pi/6)
 
         elif ant.state == "Attacking":
             SoldierBehavior.attack(ant, dt)

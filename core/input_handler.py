@@ -10,6 +10,7 @@ class InputHandler:
         # visualización
         self.show_grid = False
         self.show_trails = False
+        self.only_selected_trail = False
 
         # modo de creación de objetos
         self.place_obstacle_mode = False
@@ -58,6 +59,9 @@ class InputHandler:
 
                 elif event.key == pygame.K_c:
                     self.current_size = ObjectSize.LARGE
+
+                elif event.key == pygame.K_r:
+                    self.only_selected_trail = not self.only_selected_trail
 
             # ----- mouse -----
             elif event.type == pygame.MOUSEBUTTONDOWN:
