@@ -36,10 +36,50 @@ class SoldierBehavior:
 
     @staticmethod
     def detect_enemy(ant):
+
+        closest = None
+        min_dist = ant.vision_radius
+
         for obj in ant.world.obstacles.obstacles:
-            if obj.type == ObjectType.DANGER:
-                return obj
-        return None
+
+            if obj.type != ObjectType.DANGER:
+                continue
+
+            dx = obj.x - ant.x
+            dy = obj.y - ant.y
+
+            distance = math.sqrt(dx * dx + dy * dy)
+
+            if distance == 0:
+                continue
+
+            if distance > ant.vision_radius:
+                continue
+
+            # -----------------------------
+            # 👁️ FOV CON DOT PRODUCT
+            # -----------------------------
+
+            dir_x = dx / distance
+            dir_y = dy / distance
+
+            forward_x = math.cos(ant.angle)
+            forward_y = math.sin(ant.angle)
+
+            dot = dir_x * forward_x + dir_y * forward_y
+
+            max_angle = math.cos(ant.fov / 2)
+
+            if dot < max_angle:
+                continue
+
+            # -----------------------------
+
+            if distance < min_dist:
+                closest = obj
+                min_dist = distance
+
+        return closest
     
     @staticmethod
     def attack(ant, dt):

@@ -83,25 +83,38 @@ class WorkerBehavior:
 
             distance = math.sqrt(dx * dx + dy * dy)
 
+            if distance == 0:
+                continue
+
             if distance > ant.vision_radius:
                 continue
 
-            angle_to_obj = math.atan2(dy, dx)
-            angle_diff = abs((angle_to_obj - ant.angle + math.pi) % (2 * math.pi) - math.pi)
+            # -----------------------------
+            # 👁️ FOV CON DOT PRODUCT
+            # -----------------------------
 
-            if angle_diff > ant.fov / 2:
+            dir_x = dx / distance
+            dir_y = dy / distance
+
+            forward_x = math.cos(ant.angle)
+            forward_y = math.sin(ant.angle)
+
+            dot = dir_x * forward_x + dir_y * forward_y
+
+            max_angle = math.cos(ant.fov / 2)
+
+            if dot < max_angle:
                 continue
+
+            # -----------------------------
 
             if distance < min_dist:
                 closest = obj
                 min_dist = distance
 
         return closest
-
-    # =========================================================
-    # 🍎 IR A COMIDA (TU LÓGICA ORIGINAL)
-    # =========================================================
-
+    
+    
     @staticmethod
     def go_to_food(ant, dt):
 
