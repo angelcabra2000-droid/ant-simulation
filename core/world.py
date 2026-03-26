@@ -6,6 +6,7 @@ from agents.nest import Nest
 from core.save_system import save_world, load_world, reset_world
 from enviroment.obstacle_manager import ObstacleManager
 from enviroment.obstacle import Obstacle
+from enviroment.pheromone import Pheromone
 
 
 class World:
@@ -28,6 +29,7 @@ class World:
 
         # Agentes
         self.ants = []
+        self.pheromones = []
 
         # 👇 Crear 2 hormigas (Worker + Soldier)
         self.create_initial_ants()
@@ -68,15 +70,35 @@ class World:
         for ant in self.ants:
             ant.update(dt, self)
 
-    # =========================
+        self.update_pheromones(dt)
+
+
+    def update_pheromones(self, dt):
+
+        for p in self.pheromones[:]:
+
+            p.life -= dt
+
+            if p.life <= 0:
+                self.pheromones.remove(p)
+
+    def add_pheromone(self, pheromone):
+        self.pheromones.append(pheromone)
+# =========================
     # DRAW
     # =========================
 
-    def draw(self, screen, camera, show_trails=True, preview_data=None, panel=None, only_selected_trail=False):
-
+    def draw(self, screen, camera, show_trails=True, preview_data=None, panel=None, only_selected_trail=False, show_pheromones=True):
         self.nest.draw(screen, camera)
         self.obstacles.draw(screen, camera)
 
+
+        # 🧪 FEROMONAS
+        if show_pheromones:
+            for p in self.pheromones:
+                p.draw(screen, camera)
+
+                
         selected_ant = panel.selected_ant if panel and panel.visible else None
 
         for ant in self.ants:

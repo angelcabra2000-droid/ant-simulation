@@ -92,7 +92,8 @@ def main():
             input_handler.show_trails,
             preview_data,
             panel,
-            input_handler.only_selected_trail
+            input_handler.only_selected_trail,
+            input_handler.show_pheromones
         )
 
         ui.draw(screen, world, input_handler)

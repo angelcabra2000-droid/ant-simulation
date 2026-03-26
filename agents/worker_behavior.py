@@ -2,6 +2,7 @@ import math
 import random
 from enviroment.object_type import ObjectType
 from .base_behavior import BaseBehavior
+from enviroment.pheromone import Pheromone
 
 
 class WorkerBehavior:
@@ -9,14 +10,22 @@ class WorkerBehavior:
     @staticmethod
     def update(ant, dt, world):
 
-        # -----------------------------
-        # BASE
-        # -----------------------------
         BaseBehavior.clean_target(ant)
         BaseBehavior.aging(ant, dt)
 
         # -----------------------------
-        # DETECCIÓN
+        # 👁️ FEROMONAS (ANTES DE TODO)
+        # -----------------------------
+        steer_x, steer_y = WorkerBehavior.detect_pheromones(ant)
+
+        if steer_x != 0 or steer_y != 0:
+            desired_angle = math.atan2(steer_y, steer_x)
+
+            angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
+            ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
+
+        # -----------------------------
+        # DETECCIÓN COMIDA
         # -----------------------------
         obj = WorkerBehavior.detect_food(ant)
 
@@ -28,7 +37,6 @@ class WorkerBehavior:
         # ESTADOS
         # -----------------------------
 
-        # ---- EXPLORAR ----
         if ant.state == "Exploring":
 
             ant.turn_timer += dt
@@ -38,15 +46,12 @@ class WorkerBehavior:
                 ant.turn_interval = random.uniform(0.5, 2)
                 ant.angle += random.uniform(-math.pi/6, math.pi/6)
 
-        # ---- IR A COMIDA ----
         elif ant.state == "GoingToFood":
             WorkerBehavior.go_to_food(ant, dt)
 
-        # ---- REGRESAR ----
         elif ant.state == "ReturningFood":
             WorkerBehavior.return_home(ant, dt)
 
-        # ---- ESPERAR ----
         elif ant.state == "WaitingInNest":
 
             ant.nest_timer += dt
@@ -54,14 +59,11 @@ class WorkerBehavior:
             if ant.nest_timer >= ant.nest_wait_time:
                 ant.state = "Exploring"
 
-        # -----------------------------
-        # BASE FINAL
-        # -----------------------------
         BaseBehavior.avoid_obstacles(ant)
         BaseBehavior.move(ant, dt, world)
 
     # =========================================================
-    # 🔍 DETECCIÓN
+    # 🔍 DETECCIÓN COMIDA
     # =========================================================
 
     @staticmethod
@@ -83,15 +85,8 @@ class WorkerBehavior:
 
             distance = math.sqrt(dx * dx + dy * dy)
 
-            if distance == 0:
+            if distance == 0 or distance > ant.vision_radius:
                 continue
-
-            if distance > ant.vision_radius:
-                continue
-
-            # -----------------------------
-            # 👁️ FOV CON DOT PRODUCT
-            # -----------------------------
 
             dir_x = dx / distance
             dir_y = dy / distance
@@ -100,21 +95,53 @@ class WorkerBehavior:
             forward_y = math.sin(ant.angle)
 
             dot = dir_x * forward_x + dir_y * forward_y
-
             max_angle = math.cos(ant.fov / 2)
 
             if dot < max_angle:
                 continue
-
-            # -----------------------------
 
             if distance < min_dist:
                 closest = obj
                 min_dist = distance
 
         return closest
-    
-    
+
+    # =========================================================
+    # 🧪 FEROMONAS
+    # =========================================================
+
+    @staticmethod
+    def detect_pheromones(ant):
+
+        steer_x = 0
+        steer_y = 0
+
+        for p in ant.world.pheromones:
+
+            dx = p.x - ant.x
+            dy = p.y - ant.y
+
+            dist = math.sqrt(dx * dx + dy * dy)
+
+            if dist == 0 or dist > ant.vision_radius:
+                continue
+
+            weight = p.strength / (dist + 0.01)
+
+            if p.type == "DANGER":
+                steer_x -= dx * weight
+                steer_y -= dy * weight
+
+            elif p.type == "FOOD" and not ant.carrying_food:
+                steer_x += dx * weight
+                steer_y += dy * weight
+
+        return steer_x, steer_y
+
+    # =========================================================
+    # 🍎 IR A COMIDA
+    # =========================================================
+
     @staticmethod
     def go_to_food(ant, dt):
 
@@ -126,7 +153,6 @@ class WorkerBehavior:
         dy = ant.target.y - ant.y
         ant.angle = math.atan2(dy, dx)
 
-        # ---- COMER ----
         if not ant.carrying_food and BaseBehavior.circle_rect_collision(ant, ant.target):
 
             if not ant.is_eating:
@@ -148,7 +174,6 @@ class WorkerBehavior:
                         if ant.target in ant.world.obstacles.obstacles:
                             ant.world.obstacles.obstacles.remove(ant.target)
 
-                # 🔴 EMPUJÓN (igual que antes)
                 push = ant.radius * 2
                 ant.x += math.cos(ant.angle) * push
                 ant.y += math.sin(ant.angle) * push
@@ -156,10 +181,8 @@ class WorkerBehavior:
                 ant.state = "ReturningFood"
                 ant.target = None
 
-            return
-
     # =========================================================
-    # 🏠 REGRESAR AL NIDO (TU LÓGICA ORIGINAL)
+    # 🏠 REGRESAR + DEJAR FEROMONAS
     # =========================================================
 
     @staticmethod
@@ -173,12 +196,13 @@ class WorkerBehavior:
         angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
         ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
 
-        ant.return_turn_timer += dt
-
-        if ant.return_turn_timer >= ant.return_turn_interval:
-            ant.return_turn_timer = 0
-            ant.return_turn_interval = random.uniform(0.2, 0.6)
-            ant.angle += random.uniform(-0.4, 0.4)
+        # 🧪 dejar feromona
+        ant.pheromone_timer += dt
+        if ant.pheromone_timer >= ant.pheromone_interval:
+            ant.world.pheromones.append(
+                Pheromone(ant.x, ant.y, "FOOD")
+            )
+            ant.pheromone_timer = 0
 
         dist = math.sqrt(ant.x * ant.x + ant.y * ant.y)
 

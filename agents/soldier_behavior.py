@@ -2,6 +2,8 @@ import math
 import random
 from enviroment.object_type import ObjectType
 from .base_behavior import BaseBehavior
+from enviroment.pheromone import Pheromone
+from .worker_behavior import WorkerBehavior
 
 
 class SoldierBehavior:
@@ -11,6 +13,16 @@ class SoldierBehavior:
 
         BaseBehavior.clean_target(ant)
         BaseBehavior.aging(ant, dt)
+
+        # 🧪 marcar comida (sin ir)
+        food = WorkerBehavior.detect_food(ant)
+        if food:
+            ant.pheromone_timer += dt
+            if ant.pheromone_timer >= ant.pheromone_interval:
+                ant.world.pheromones.append(
+                    Pheromone(ant.x, ant.y, "FOOD")
+                )
+                ant.pheromone_timer = 0
 
         obj = SoldierBehavior.detect_enemy(ant)
 
@@ -32,7 +44,9 @@ class SoldierBehavior:
         BaseBehavior.avoid_obstacles(ant)
         BaseBehavior.move(ant, dt, world)
 
-    # -------------------------
+    # =========================================================
+    # 🔍 DETECCIÓN ENEMIGOS
+    # =========================================================
 
     @staticmethod
     def detect_enemy(ant):
@@ -50,15 +64,8 @@ class SoldierBehavior:
 
             distance = math.sqrt(dx * dx + dy * dy)
 
-            if distance == 0:
+            if distance == 0 or distance > ant.vision_radius:
                 continue
-
-            if distance > ant.vision_radius:
-                continue
-
-            # -----------------------------
-            # 👁️ FOV CON DOT PRODUCT
-            # -----------------------------
 
             dir_x = dx / distance
             dir_y = dy / distance
@@ -67,20 +74,21 @@ class SoldierBehavior:
             forward_y = math.sin(ant.angle)
 
             dot = dir_x * forward_x + dir_y * forward_y
-
             max_angle = math.cos(ant.fov / 2)
 
             if dot < max_angle:
                 continue
-
-            # -----------------------------
 
             if distance < min_dist:
                 closest = obj
                 min_dist = distance
 
         return closest
-    
+
+    # =========================================================
+    # ⚔️ ATAQUE + FEROMONA DE PELIGRO
+    # =========================================================
+
     @staticmethod
     def attack(ant, dt):
 
@@ -90,10 +98,16 @@ class SoldierBehavior:
             dy = ant.target.y - ant.y
             ant.angle = math.atan2(dy, dx)
 
-            # colisión
+            # 🧪 dejar feromona de peligro
+            ant.pheromone_timer += dt
+            if ant.pheromone_timer >= ant.pheromone_interval:
+                ant.world.pheromones.append(
+                    Pheromone(ant.x, ant.y, "DANGER")
+                )
+                ant.pheromone_timer = 0
+
             if BaseBehavior.circle_rect_collision(ant, ant.target):
 
-                # empujar hacia atrás
                 angle_away = math.atan2(
                     ant.y - ant.target.y,
                     ant.x - ant.target.x
@@ -105,7 +119,6 @@ class SoldierBehavior:
 
                 ant.angle = angle_away + random.uniform(-0.5, 0.5)
 
-                # daño
                 ant.target.health -= 10
 
                 if ant.target.health <= 0:

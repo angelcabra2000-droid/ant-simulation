@@ -11,6 +11,7 @@ class InputHandler:
         self.show_grid = False
         self.show_trails = False
         self.only_selected_trail = False
+        self.show_pheromones = True
 
         # modo de creación de objetos
         self.place_obstacle_mode = False
@@ -63,6 +64,8 @@ class InputHandler:
                 elif event.key == pygame.K_r:
                     self.only_selected_trail = not self.only_selected_trail
 
+                elif event.key == pygame.K_f:
+                    self.show_pheromones = not self.show_pheromones
             # ----- mouse -----
             elif event.type == pygame.MOUSEBUTTONDOWN:
 

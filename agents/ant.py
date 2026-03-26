@@ -94,6 +94,13 @@ class Ant:
         if self.caste is not None:
             self.apply_caste_stats()
 
+        # -------------------
+        # FEROMONAS
+        # 
+
+        self.pheromone_timer = 0
+        self.pheromone_interval = 0.2
+
     # ---------------------------------
 
 
