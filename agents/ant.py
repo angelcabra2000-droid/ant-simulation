@@ -2,9 +2,7 @@ import random
 import math
 import pygame
 from collections import deque
-
 from config.settings import ANT_COLOR
-#from agents.ant_behavior import AntBehavior
 from agents.worker_behavior import WorkerBehavior
 from agents.soldier_behavior import SoldierBehavior
 from agents.ant_caste import AntCaste
@@ -53,6 +51,8 @@ class Ant:
 
         self.vision_radius = 0.5
         self.fov = math.pi / 2
+        self.pheromone_timer = 0
+        self.pheromone_interval = 0.3  # puedes ajustar luego (0.2–0.5)
 
         # -------------------
         # EXPLORACIÓN

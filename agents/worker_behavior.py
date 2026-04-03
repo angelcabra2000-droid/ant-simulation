@@ -37,6 +37,28 @@ class WorkerBehavior:
             ant.state = "GoingToFood"
 
         # -----------------------------
+        # 🚨 DETECCIÓN DE PELIGRO
+        # -----------------------------
+        danger = WorkerBehavior.detect_danger(ant)
+
+        if danger:
+            ant.pheromone_timer += dt
+
+            # dejar feromona de peligro
+            if ant.pheromone_timer >= ant.pheromone_interval:
+                ant.world.pheromones.append(
+                    Pheromone(ant.x, ant.y, "DANGER")
+                )
+                ant.pheromone_timer = 0
+
+            # girar en dirección contraria (huir)
+            dx = ant.x - danger.x
+            dy = ant.y - danger.y
+            ant.angle = math.atan2(dy, dx)
+
+            ant.state = "Exploring"
+
+        # -----------------------------
         # ESTADOS
         # -----------------------------
 
@@ -111,6 +133,24 @@ class WorkerBehavior:
                 min_dist = distance
 
         return closest
+    
+    @staticmethod
+    def detect_danger(ant):
+
+        for obj in ant.world.obstacles.obstacles:
+
+            if obj.type != ObjectType.DANGER:
+                continue
+
+            dx = obj.x - ant.x
+            dy = obj.y - ant.y
+
+            dist = math.sqrt(dx * dx + dy * dy)
+
+            if dist < ant.vision_radius:
+                return obj
+
+        return None
 
     # =========================================================
     # 🧪 FEROMONAS (MEJORADO)

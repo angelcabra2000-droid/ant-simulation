@@ -15,24 +15,28 @@ class SoldierBehavior:
         BaseBehavior.aging(ant, dt)
         BaseBehavior.check_energy(ant)
 
-        # 🧪 marcar comida (sin ir)
+        # -----------------------------
+        # 👁️ SOLDADO DETECTA COMIDA Y MARCA
+        # -----------------------------
         food = WorkerBehavior.detect_food(ant)
+
         if food:
             ant.pheromone_timer += dt
+
             if ant.pheromone_timer >= ant.pheromone_interval:
                 ant.world.pheromones.append(
                     Pheromone(ant.x, ant.y, "FOOD")
                 )
                 ant.pheromone_timer = 0
 
-        # -----------------------------
-        # DETECCIÓN ENEMIGOS
-        # -----------------------------
-        obj = SoldierBehavior.detect_enemy(ant)
+                # -----------------------------
+                # DETECCIÓN ENEMIGOS
+                # -----------------------------
+                obj = SoldierBehavior.detect_enemy(ant)
 
-        if obj and ant.target is None and ant.state not in ("ReturningNest", "WaitingInNest"):
-            ant.target = obj
-            ant.state = "Attacking"
+                if obj and ant.target is None and ant.state not in ("ReturningNest", "WaitingInNest"):
+                    ant.target = obj
+                    ant.state = "Attacking"
 
         # -----------------------------
         # ESTADOS
