@@ -42,16 +42,11 @@ class World:
     # =========================
 
     def create_initial_ants(self):
+        worker = Ant(0, self, AntCaste.WORKER)
+        soldier = Ant(1, self, AntCaste.SOLDIER)
 
-        # 🐜 WORKER
-        worker = Ant(0, self)
-        worker.caste = AntCaste.WORKER
-        worker.apply_caste_stats()
-
-        # 🐜 SOLDIER
-        soldier = Ant(1, self)
-        soldier.caste = AntCaste.SOLDIER
-        soldier.apply_caste_stats()
+        self.ants.append(worker)
+        self.ants.append(soldier)
 
         self.ants.append(worker)
         self.ants.append(soldier)

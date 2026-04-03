@@ -12,17 +12,18 @@ class WorkerBehavior:
 
         BaseBehavior.clean_target(ant)
         BaseBehavior.aging(ant, dt)
+        BaseBehavior.check_energy(ant)
 
         # -----------------------------
-        # 👁️ FEROMONAS (ANTES DE TODO)
+        # 👁️ FEROMONAS
         # -----------------------------
-        steer_x, steer_y = WorkerBehavior.detect_pheromones(ant)
+        if ant.state == "Exploring":
+            steer_x, steer_y = WorkerBehavior.detect_pheromones(ant)
 
-        if steer_x != 0 or steer_y != 0:
-            desired_angle = math.atan2(steer_y, steer_x)
-
-            angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
-            ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
+            if steer_x != 0 or steer_y != 0:
+                desired_angle = math.atan2(steer_y, steer_x)
+                angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
+                ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
 
         # -----------------------------
         # DETECCIÓN COMIDA
@@ -38,7 +39,6 @@ class WorkerBehavior:
         # -----------------------------
 
         if ant.state == "Exploring":
-
             ant.turn_timer += dt
 
             if ant.turn_timer >= ant.turn_interval:
@@ -52,12 +52,16 @@ class WorkerBehavior:
         elif ant.state == "ReturningFood":
             WorkerBehavior.return_home(ant, dt)
 
+        elif ant.state == "ReturningNest":
+            BaseBehavior.return_to_nest(ant, dt)
+
         elif ant.state == "WaitingInNest":
-
             ant.nest_timer += dt
+            ant.energy = min(100, ant.energy + 10 * dt)
 
-            if ant.nest_timer >= ant.nest_wait_time:
+            if ant.nest_timer >= ant.nest_wait_time and ant.energy >= 100:
                 ant.state = "Exploring"
+                ant.nest_timer = 0
 
         BaseBehavior.avoid_obstacles(ant)
         BaseBehavior.move(ant, dt, world)

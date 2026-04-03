@@ -15,7 +15,7 @@ class BaseBehavior:
     @staticmethod
     def aging(ant, dt):
         ant.age += dt
-        ant.energy -= dt * 0.5
+        ant.energy -= dt * 00000.1
 
     @staticmethod
     def circle_rect_collision(ant, rect):
@@ -101,3 +101,24 @@ class BaseBehavior:
         if ant.y > world.half_height:
             ant.y = world.half_height
             ant.angle = -ant.angle
+
+    @staticmethod
+    def check_energy(ant):
+        if ant.energy <= 20 and ant.state != "WaitingInNest" and ant.state != "ReturningNest":
+            ant.state = "ReturningNest"
+            ant.carrying_food = False
+            ant.target = None
+            ant.is_eating = False
+
+    @staticmethod
+    def return_to_nest(ant, dt):
+        dx = -ant.x
+        dy = -ant.y
+        desired_angle = math.atan2(dy, dx)
+        angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
+        ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
+
+        dist = math.sqrt(ant.x ** 2 + ant.y ** 2)
+        if dist < ant.world.nest.radius:
+            ant.state = "WaitingInNest"
+            ant.nest_timer = 0

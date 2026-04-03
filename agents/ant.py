@@ -11,11 +11,11 @@ from agents.ant_caste import AntCaste
 
 class Ant:
 
-    def __init__(self, ant_id, world):
+    def __init__(self, ant_id, world, caste):
 
         self.id = ant_id
         self.world = world
-        self.caste = None
+        self.caste = caste
 
         # -------------------
         # VIDA
@@ -91,8 +91,7 @@ class Ant:
         self.eating_time = 3
         self.is_eating = False
 
-        if self.caste is not None:
-            self.apply_caste_stats()
+        self.apply_caste_stats()
 
         # -------------------
         # FEROMONAS
@@ -213,9 +212,9 @@ class Ant:
     def apply_caste_stats(self):
         if self.caste == AntCaste.WORKER:
             self.radius = 0.008
-            self.speed = 0.09
+            self.speed = 0.07
         elif self.caste == AntCaste.SOLDIER:
             self.radius = 0.012
-            self.speed = 0.07
+            self.speed = 0.06
 
         self.current_speed = self.speed

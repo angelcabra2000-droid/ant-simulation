@@ -1,6 +1,7 @@
 import pygame
 import os
 from config.settings import PANEL_COLOR, TEXT_COLOR
+from agents.ant_caste import AntCaste 
 
 
 class AntInfoPanel:
@@ -55,9 +56,10 @@ class AntInfoPanel:
 
         lines = [
             f"ID: {self.selected_ant.id}",
-            f"Caste: {self.selected_ant.caste.name}",  # 🔥 NUEVO
+            f"Caste: {self.selected_ant.caste.name}",
             f"State: {self.selected_ant.state}",
             f"Age: {self.selected_ant.age:.1f}s",
+            f"Energy: {self.selected_ant.energy:.1f}%",  # ← nuevo
             f"Vel: {self.selected_ant.current_speed:.2f} m/s",
         ]
 
@@ -116,16 +118,20 @@ class AntInfoPanel:
             color = TEXT_COLOR
 
             if "Caste" in line:
-                if self.selected_ant.caste == "Worker":
-                    color = (100, 200, 255)  # azul
-                elif self.selected_ant.caste == "Soldier":
-                    color = (255, 100, 100)  # rojo
+                if self.selected_ant.caste == AntCaste.WORKER:
+                    color = (100, 255, 100)
+                elif self.selected_ant.caste == AntCaste.SOLDIER:
+                    color = (255, 100, 100)
+
+            elif "Energy" in line:
+                energy = self.selected_ant.energy
+                if energy > 60:
+                    color = (100, 255, 100)   # verde
+                elif energy > 20:
+                    color = (255, 200, 50)    # amarillo
+                else:
+                    color = (255, 80, 80)     # rojo — peligro
 
             text = self.font.render(line, True, color)
-
-            screen.blit(
-                text,
-                (panel_rect.left + self.padding, y_offset)
-            )
-
+            screen.blit(text, (panel_rect.left + self.padding, y_offset))
             y_offset += line_height

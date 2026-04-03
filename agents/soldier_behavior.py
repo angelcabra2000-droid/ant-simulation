@@ -13,6 +13,7 @@ class SoldierBehavior:
 
         BaseBehavior.clean_target(ant)
         BaseBehavior.aging(ant, dt)
+        BaseBehavior.check_energy(ant)
 
         # 🧪 marcar comida (sin ir)
         food = WorkerBehavior.detect_food(ant)
@@ -24,14 +25,20 @@ class SoldierBehavior:
                 )
                 ant.pheromone_timer = 0
 
+        # -----------------------------
+        # DETECCIÓN ENEMIGOS
+        # -----------------------------
         obj = SoldierBehavior.detect_enemy(ant)
 
-        if obj and ant.target is None:
+        if obj and ant.target is None and ant.state not in ("ReturningNest", "WaitingInNest"):
             ant.target = obj
             ant.state = "Attacking"
 
-        if ant.state == "Exploring":
+        # -----------------------------
+        # ESTADOS
+        # -----------------------------
 
+        if ant.state == "Exploring":
             ant.turn_timer += dt
 
             if ant.turn_timer >= 0.3:
@@ -40,6 +47,17 @@ class SoldierBehavior:
 
         elif ant.state == "Attacking":
             SoldierBehavior.attack(ant, dt)
+
+        elif ant.state == "ReturningNest":
+            BaseBehavior.return_to_nest(ant, dt)
+
+        elif ant.state == "WaitingInNest":
+            ant.nest_timer += dt
+            ant.energy = min(100, ant.energy + 10 * dt)
+
+            if ant.nest_timer >= ant.nest_wait_time and ant.energy >= 100:
+                ant.state = "Exploring"
+                ant.nest_timer = 0
 
         BaseBehavior.avoid_obstacles(ant)
         BaseBehavior.move(ant, dt, world)

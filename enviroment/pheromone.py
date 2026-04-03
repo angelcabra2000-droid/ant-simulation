@@ -11,11 +11,18 @@ class Pheromone:
 
         self.type = p_type  # "food" o "danger"
 
-        self.strength = strength
+        self.max_strength = strength
         self.life = life
-        self.max_life = life  # para fade visual
+        self.max_life = life
 
     # ---------------------------------
+
+    @property
+    def strength(self):
+        if self.max_life == 0:
+            return 0
+        return self.max_strength * (self.life / self.max_life)
+    
 
     def draw(self, screen, camera):
 
