@@ -23,7 +23,9 @@ class WorkerBehavior:
             if steer_x != 0 or steer_y != 0:
                 desired_angle = math.atan2(steer_y, steer_x)
                 angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
-                ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
+
+                turn_force = angle_diff * 2
+                ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, turn_force))
 
         # -----------------------------
         # DETECCIÓN COMIDA
@@ -67,7 +69,7 @@ class WorkerBehavior:
         BaseBehavior.move(ant, dt, world)
 
     # =========================================================
-    # 🔍 DETECCIÓN COMIDA
+    # 🔍 DETECCIÓN COMIDA (CORREGIDO)
     # =========================================================
 
     @staticmethod
@@ -111,7 +113,7 @@ class WorkerBehavior:
         return closest
 
     # =========================================================
-    # 🧪 FEROMONAS
+    # 🧪 FEROMONAS (MEJORADO)
     # =========================================================
 
     @staticmethod
@@ -130,15 +132,40 @@ class WorkerBehavior:
             if dist == 0 or dist > ant.vision_radius:
                 continue
 
-            weight = p.strength / (dist + 0.01)
+            # dirección normalizada
+            dir_x = dx / dist
+            dir_y = dy / dist
+
+            # forward
+            forward_x = math.cos(ant.angle)
+            forward_y = math.sin(ant.angle)
+
+            dot = dir_x * forward_x + dir_y * forward_y
+
+            if dot < 0:
+                continue
+
+            direction_weight = dot ** 2
+
+            falloff = 1 - (dist / ant.vision_radius)
+            falloff = max(0, falloff)
+
+            weight = p.strength * direction_weight * falloff
 
             if p.type == "DANGER":
-                steer_x -= dx * weight
-                steer_y -= dy * weight
+                steer_x -= dir_x * weight
+                steer_y -= dir_y * weight
 
             elif p.type == "FOOD" and not ant.carrying_food:
-                steer_x += dx * weight
-                steer_y += dy * weight
+                steer_x += dir_x * weight
+                steer_y += dir_y * weight
+
+        # normalizar
+        magnitude = math.sqrt(steer_x**2 + steer_y**2)
+
+        if magnitude > 0:
+            steer_x /= magnitude
+            steer_y /= magnitude
 
         return steer_x, steer_y
 
@@ -186,7 +213,7 @@ class WorkerBehavior:
                 ant.target = None
 
     # =========================================================
-    # 🏠 REGRESAR + DEJAR FEROMONAS
+    # 🏠 REGRESAR
     # =========================================================
 
     @staticmethod
@@ -198,9 +225,10 @@ class WorkerBehavior:
         desired_angle = math.atan2(dy, dx)
 
         angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
-        ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, angle_diff))
+        turn_force = angle_diff * 2
+        ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, turn_force))
 
-        # 🧪 dejar feromona
+        # dejar feromona
         ant.pheromone_timer += dt
         if ant.pheromone_timer >= ant.pheromone_interval:
             ant.world.pheromones.append(
