@@ -18,17 +18,12 @@ class WorkerBehavior:
         # PRIORIDAD GLOBAL: PELIGRO > OBJETIVO ACTUAL > FEROMONAS > EXPLORACIÓN
         # =========================================================
 
-        # --- 1. DETECCIÓN DE PELIGRO (máxima prioridad, siempre activa) ---
         danger = WorkerBehavior.detect_danger(ant)
 
         if danger:
-            # Si está en un estado donde el peligro modifica dirección (no cancela objetivo)
             if ant.state == "ReturningFood":
-                # Solo hacer steering — mantener dirección general al nido
-                WorkerBehavior._steer_away_from(ant, danger, dt)
-
+                pass  # el steering combinado ocurre dentro del estado
             elif ant.state not in ("AvoidingDanger", "WaitingInNest", "ReturningNest"):
-                # En cualquier otro estado activo: cambiar a AvoidingDanger
                 ant.target = None
                 ant.is_eating = False
                 ant.carrying_food = False
@@ -45,7 +40,7 @@ class WorkerBehavior:
             WorkerBehavior._state_going_to_food(ant, dt)
 
         elif ant.state == "ReturningFood":
-            WorkerBehavior._state_returning_food(ant, dt)
+            WorkerBehavior._state_returning_food(ant, dt, danger)
 
         elif ant.state == "ReturningNest":
             BaseBehavior.return_to_nest(ant, dt)
@@ -56,7 +51,12 @@ class WorkerBehavior:
         elif ant.state == "AvoidingDanger":
             WorkerBehavior._state_avoiding_danger(ant, dt)
 
-        BaseBehavior.avoid_obstacles(ant)
+        # FIX 3: evasión suave solo en ReturningFood, genérica para el resto
+        if ant.state == "ReturningFood":
+            WorkerBehavior._avoid_obstacles_soft(ant, dt)
+        else:
+            BaseBehavior.avoid_obstacles(ant)
+
         BaseBehavior.move(ant, dt, world)
 
     # =========================================================
@@ -65,20 +65,12 @@ class WorkerBehavior:
 
     @staticmethod
     def _state_exploring(ant, dt):
-        """
-        1. Si ve comida → GoingToFood
-        2. Si huele peligro → evitar + dejar feromona DANGER
-        3. Si huele comida → seguir gradiente
-        4. Si nada → movimiento semi-aleatorio
-        """
-        # 1. Ver comida (prioridad sobre feromonas)
         food = WorkerBehavior.detect_food(ant)
         if food:
             ant.target = food
             ant.state = "GoingToFood"
             return
 
-        # 2 y 3. Feromonas (DANGER repele, FOOD atrae)
         steer_x, steer_y = WorkerBehavior.detect_pheromones(ant)
 
         if steer_x != 0 or steer_y != 0:
@@ -87,7 +79,6 @@ class WorkerBehavior:
             turn_force = angle_diff * 2
             ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, turn_force))
         else:
-            # 4. Movimiento semi-aleatorio
             ant.turn_timer += dt
             if ant.turn_timer >= ant.turn_interval:
                 ant.turn_timer = 0
@@ -96,11 +87,6 @@ class WorkerBehavior:
 
     @staticmethod
     def _state_going_to_food(ant, dt):
-        """
-        1. Si ve peligro → AvoidingDanger  (manejado arriba en update)
-        2. Si llega a la comida → comer → ReturningFood
-        3. Si pierde la comida → Exploring
-        """
         if ant.target is None:
             ant.state = "Exploring"
             return
@@ -136,16 +122,58 @@ class WorkerBehavior:
                 ant.target = None
 
     @staticmethod
-    def _state_returning_food(ant, dt):
+    def _state_returning_food(ant, dt, danger=None):
         """
-        1. Ir hacia el nido (vector directo)
-        2. Si ve peligro → solo steering, mantener dirección general (manejado arriba)
+        1. Ir hacia el nido
+        2. FIX 2: steering combinado con repulsión dinámica — cuanto más cerca el
+           peligro, más domina la repulsión. A distancia cero es 100% repulsión,
+           a vision_radius es 100% nido.
         3. Siempre dejar feromona FOOD
-        4. Si llega al nido → soltar comida → WaitingInNest
+        4. Si llega al nido → WaitingInNest
         """
-        dx = -ant.x
-        dy = -ant.y
-        desired_angle = math.atan2(dy, dx)
+        # Vector normalizado hacia el nido
+        nest_dx = -ant.x
+        nest_dy = -ant.y
+        nest_dist = math.sqrt(nest_dx * nest_dx + nest_dy * nest_dy)
+        if nest_dist > 0:
+            nest_dx /= nest_dist
+            nest_dy /= nest_dist
+
+        # FIX 2: pesos dinámicos según distancia al peligro
+        if danger is not None:
+            dx_d = ant.x - danger.x
+            dy_d = ant.y - danger.y
+            danger_dist = math.sqrt(dx_d * dx_d + dy_d * dy_d)
+
+            if danger_dist > 0:
+                # t=0 → peligro encima (repulsión domina)
+                # t=1 → peligro en el borde del radio (nido domina)
+                t = min(1.0, danger_dist / ant.vision_radius)
+
+                # Peso nido crece con t, peso repulsión decrece con t
+                # Mínimo del nido: 0.4 (siempre mantiene algo de dirección al nido)
+                nest_weight      = 0.4 + 0.6 * t
+                repulsion_weight = 1.0 - nest_weight
+
+                repulse_x = (dx_d / danger_dist) * repulsion_weight
+                repulse_y = (dy_d / danger_dist) * repulsion_weight
+
+                combined_x = nest_dx * nest_weight + repulse_x
+                combined_y = nest_dy * nest_weight + repulse_y
+            else:
+                combined_x = nest_dx
+                combined_y = nest_dy
+        else:
+            combined_x = nest_dx
+            combined_y = nest_dy
+
+        # Normalizar y aplicar steering suave
+        mag = math.sqrt(combined_x * combined_x + combined_y * combined_y)
+        if mag > 0:
+            combined_x /= mag
+            combined_y /= mag
+
+        desired_angle = math.atan2(combined_y, combined_x)
         angle_diff = (desired_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
         turn_force = angle_diff * 2
         ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, turn_force))
@@ -156,6 +184,7 @@ class WorkerBehavior:
             ant.world.pheromones.append(Pheromone(ant.x, ant.y, "FOOD"))
             ant.pheromone_timer = 0
 
+        # Llegó al nido
         dist = math.sqrt(ant.x * ant.x + ant.y * ant.y)
         if dist < ant.world.nest.radius:
             ant.carrying_food = False
@@ -165,57 +194,104 @@ class WorkerBehavior:
 
     @staticmethod
     def _state_waiting_in_nest(ant, dt):
-        """
-        1. Recuperar energía
-        2. Después de cierto tiempo → Exploring
-        """
         ant.nest_timer += dt
         ant.energy = min(100, ant.energy + 10 * dt)
-
         if ant.nest_timer >= ant.nest_wait_time and ant.energy >= 100:
             ant.state = "Exploring"
             ant.nest_timer = 0
 
     @staticmethod
     def _state_avoiding_danger(ant, dt):
-        """
-        1. Moverse en dirección opuesta al peligro
-        2. Dejar feromona DANGER
-        3. Cuando ya no detecta peligro → Exploring
-        """
         danger = WorkerBehavior.detect_danger(ant)
-
         if danger is None:
             ant.state = "Exploring"
             return
 
-        # Huir del peligro
         dx = ant.x - danger.x
         dy = ant.y - danger.y
         ant.angle = math.atan2(dy, dx)
 
-        # Dejar feromona DANGER
         ant.pheromone_timer += dt
         if ant.pheromone_timer >= ant.pheromone_interval:
             ant.world.pheromones.append(Pheromone(ant.x, ant.y, "DANGER"))
             ant.pheromone_timer = 0
 
     # =========================================================
-    # UTILIDADES DE PERCEPCIÓN (solo retornan datos, sin decisiones)
+    # FIX 3: EVASIÓN SUAVE DE OBSTÁCULOS (solo ReturningFood)
+    # =========================================================
+
+    @staticmethod
+    def _avoid_obstacles_soft(ant, dt):
+        """
+        El problema del original: look_ahead corto + giro instantáneo.
+        La solución: look_ahead largo para detectar con anticipación suficiente
+        para que el giro suave (con turn_speed) llegue a tiempo.
+
+        Además elige el lado que menos desvía respecto al nido.
+        """
+        # look_ahead proporcional a la velocidad actual para anticipar correctamente
+        # ant.speed * 0.5 porque ReturningFood va a mitad de velocidad
+        effective_speed = ant.speed * 0.5
+        # Cuántos segundos de anticipación queremos (suficiente para girar)
+        # turn_speed ≈ 3 rad/s, necesitamos ~π/2 rad → ~0.5s de margen mínimo
+        look_ahead = max(ant.radius * 8, effective_speed * 0.8)
+
+        future_x = ant.x + math.cos(ant.angle) * look_ahead
+        future_y = ant.y + math.sin(ant.angle) * look_ahead
+
+        for obj in ant.world.obstacles.obstacles:
+
+            if obj.type != ObjectType.OBSTACLE:
+                continue
+
+            # Expandir el bounding box por el radio de la hormiga para
+            # detectar colisión real (no solo el punto futuro)
+            half_w = obj.width  / 2 + ant.radius
+            half_h = obj.height / 2 + ant.radius
+
+            left   = obj.x - half_w
+            right  = obj.x + half_w
+            top    = obj.y - half_h
+            bottom = obj.y + half_h
+
+            if not (left < future_x < right and top < future_y < bottom):
+                continue
+
+            # Vector desde la hormiga al centro del obstáculo
+            to_obj_x = obj.x - ant.x
+            to_obj_y = obj.y - ant.y
+
+            # Tangentes: rotar 90° en ambos sentidos
+            angle_left  = math.atan2(-to_obj_x,  to_obj_y)
+            angle_right = math.atan2( to_obj_x, -to_obj_y)
+
+            # Ángulo ideal: dirección al nido
+            nest_angle = math.atan2(-ant.y, -ant.x)
+
+            # Elegir el lado que menos desvía del nido
+            diff_left  = abs((angle_left  - nest_angle + math.pi) % (2 * math.pi) - math.pi)
+            diff_right = abs((angle_right - nest_angle + math.pi) % (2 * math.pi) - math.pi)
+
+            best_angle = angle_left if diff_left <= diff_right else angle_right
+
+            # Steering suave con turn_speed
+            angle_diff = (best_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
+            turn_force = angle_diff * 3
+            ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, turn_force))
+
+            return  # un obstáculo a la vez
+
+    # =========================================================
+    # UTILIDADES DE PERCEPCIÓN
     # =========================================================
 
     @staticmethod
     def detect_food(ant):
-        """Retorna el objeto de comida más cercano dentro del FOV, o None."""
-        closest = None
+        closest  = None
         min_dist = ant.vision_radius
 
         for obj in ant.world.obstacles.obstacles:
-
-            if obj.type != ObjectType.FOOD:
-                continue
-
-            if ant.carrying_food:
+            if obj.type != ObjectType.FOOD or ant.carrying_food:
                 continue
 
             dx = obj.x - ant.x
@@ -227,30 +303,23 @@ class WorkerBehavior:
 
             dir_x = dx / distance
             dir_y = dy / distance
+            dot = dir_x * math.cos(ant.angle) + dir_y * math.sin(ant.angle)
 
-            forward_x = math.cos(ant.angle)
-            forward_y = math.sin(ant.angle)
-
-            dot = dir_x * forward_x + dir_y * forward_y
-            max_angle = math.cos(ant.fov / 2)
-
-            if dot < max_angle:
+            if dot < math.cos(ant.fov / 2):
                 continue
 
             if distance < min_dist:
-                closest = obj
+                closest  = obj
                 min_dist = distance
 
         return closest
 
     @staticmethod
     def detect_danger(ant):
-        """Retorna el objeto de peligro más cercano dentro del radio de visión, o None."""
-        closest = None
+        closest  = None
         min_dist = ant.vision_radius
 
         for obj in ant.world.obstacles.obstacles:
-
             if obj.type != ObjectType.DANGER:
                 continue
 
@@ -259,23 +328,17 @@ class WorkerBehavior:
             dist = math.sqrt(dx * dx + dy * dy)
 
             if dist < min_dist:
-                closest = obj
+                closest  = obj
                 min_dist = dist
 
         return closest
 
     @staticmethod
     def detect_pheromones(ant):
-        """
-        Retorna un vector de steering basado en feromonas visibles.
-        FOOD: atrae (si no lleva comida)
-        DANGER: repele (siempre)
-        """
         steer_x = 0
         steer_y = 0
 
         for p in ant.world.pheromones:
-
             dx = p.x - ant.x
             dy = p.y - ant.y
             dist = math.sqrt(dx * dx + dy * dy)
@@ -285,23 +348,18 @@ class WorkerBehavior:
 
             dir_x = dx / dist
             dir_y = dy / dist
-
-            forward_x = math.cos(ant.angle)
-            forward_y = math.sin(ant.angle)
-
-            dot = dir_x * forward_x + dir_y * forward_y
+            dot = dir_x * math.cos(ant.angle) + dir_y * math.sin(ant.angle)
 
             if dot < 0:
                 continue
 
             direction_weight = dot ** 2
             falloff = max(0, 1 - (dist / ant.vision_radius))
-            weight = p.strength * direction_weight * falloff
+            weight  = p.strength * direction_weight * falloff
 
             if p.type == "DANGER":
                 steer_x -= dir_x * weight
                 steer_y -= dir_y * weight
-
             elif p.type == "FOOD" and not ant.carrying_food:
                 steer_x += dir_x * weight
                 steer_y += dir_y * weight
@@ -312,17 +370,3 @@ class WorkerBehavior:
             steer_y /= magnitude
 
         return steer_x, steer_y
-
-    # =========================================================
-    # HELPERS INTERNOS
-    # =========================================================
-
-    @staticmethod
-    def _steer_away_from(ant, obj, dt):
-        """Modifica el ángulo para evitar un objeto sin cambiar de estado."""
-        dx = ant.x - obj.x
-        dy = ant.y - obj.y
-        avoid_angle = math.atan2(dy, dx)
-        angle_diff = (avoid_angle - ant.angle + math.pi) % (2 * math.pi) - math.pi
-        turn_force = angle_diff * 3
-        ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, turn_force))

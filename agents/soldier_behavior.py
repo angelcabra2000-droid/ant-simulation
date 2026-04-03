@@ -19,8 +19,7 @@ class SoldierBehavior:
         # PRIORIDAD GLOBAL: PELIGRO (visible) > OBJETIVO ACTUAL > FEROMONAS > EXPLORACIÓN
         # =========================================================
 
-        # --- 1. DETECCIÓN DE ENEMIGO (máxima prioridad, siempre activa) ---
-        # Independiente de cualquier otro estado o detección
+        # Detección de enemigo: máxima prioridad, independiente de todo
         if ant.state not in ("Attacking", "WaitingInNest", "ReturningNest"):
             enemy = SoldierBehavior.detect_enemy(ant)
             if enemy:
@@ -56,44 +55,12 @@ class SoldierBehavior:
     @staticmethod
     def _state_exploring(ant, dt):
         """
-        1. Si ve peligro → Attacking  (manejado arriba en update)
-        2. Si huele peligro → FollowingDangerTrail
-        3. Si ve comida → marcar con feromona FOOD ocasionalmente
-        4. Si nada → movimiento semi-aleatorio
-        """
-        # 2. Oler peligro (feromonas DANGER)
-        danger_steer_x, danger_steer_y = SoldierBehavior.detect_danger_pheromones(ant)
-        if danger_steer_x != 0 or danger_steer_y != 0:
-            ant.state = "FollowingDangerTrail"
-            return
-
-        # 3. Ver comida → marcar ocasionalmente
-        food = WorkerBehavior.detect_food(ant)
-        if food:
-            ant.pheromone_timer += 0  # el timer se acumula abajo con dt
-            # La marca se deja en el timer global al final
-            ant._saw_food_this_frame = True
-        else:
-            ant._saw_food_this_frame = False
-
-        # Dejar feromona FOOD si vio comida
-        ant.pheromone_timer += 0  # acumular fuera
-        if getattr(ant, "_saw_food_this_frame", False):
-            # usa un timer separado para no interferir con el de Attacking
-            ant._food_mark_timer = getattr(ant, "_food_mark_timer", 0) + 0
-        
-        # 4. Movimiento semi-aleatorio
-        ant.turn_timer += 0  # se acumula en el bloque unificado abajo
-
-    @staticmethod
-    def _state_exploring(ant, dt):
-        """
-        1. Si ve peligro → Attacking  (manejado arriba en update)
+        1. Si ve peligro → Attacking  (manejado en update)
         2. Si huele peligro → FollowingDangerTrail
         3. Si ve comida → dejar feromona FOOD ocasionalmente
         4. Si nada → movimiento semi-aleatorio
         """
-        # 2. Oler peligro (feromonas DANGER en el entorno)
+        # 2. Oler peligro
         danger_steer_x, danger_steer_y = SoldierBehavior.detect_danger_pheromones(ant)
         if danger_steer_x != 0 or danger_steer_y != 0:
             ant.state = "FollowingDangerTrail"
@@ -117,7 +84,7 @@ class SoldierBehavior:
     def _state_attacking(ant, dt):
         """
         1. Ir hacia el enemigo
-        2. Siempre dejar feromona DANGER
+        2. Siempre dejar feromona DANGER (hay enemigo visible → contexto válido)
         3. Si colisiona → hacer daño + retroceso
         4. Si enemigo muere → Exploring
         """
@@ -129,7 +96,7 @@ class SoldierBehavior:
         dy = ant.target.y - ant.y
         ant.angle = math.atan2(dy, dx)
 
-        # Siempre dejar feromona DANGER
+        # Siempre dejar DANGER — está atacando, el contexto es válido
         ant.pheromone_timer += dt
         if ant.pheromone_timer >= ant.pheromone_interval:
             ant.world.pheromones.append(Pheromone(ant.x, ant.y, "DANGER"))
@@ -137,14 +104,12 @@ class SoldierBehavior:
 
         if BaseBehavior.circle_rect_collision(ant, ant.target):
 
-            # Retroceso
             angle_away = math.atan2(ant.y - ant.target.y, ant.x - ant.target.x)
             push = ant.radius * 4
             ant.x += math.cos(angle_away) * push
             ant.y += math.sin(angle_away) * push
             ant.angle = angle_away + random.uniform(-0.5, 0.5)
 
-            # Daño
             ant.target.health -= 10
 
             if ant.target.health <= 0:
@@ -157,14 +122,15 @@ class SoldierBehavior:
     def _state_following_danger_trail(ant, dt):
         """
         1. Seguir gradiente de feromonas DANGER
-        2. Dejar feromona DANGER (reforzar camino)
-        3. Si encuentra enemigo → Attacking  (manejado arriba en update)
-        4. Si pierde rastro → Exploring
+        2. FIX 1: Solo dejar feromona DANGER si además hay un enemigo visible.
+           Si no hay enemigo, sigue el rastro pero NO lo refuerza → el rastro
+           se agota naturalmente y el ciclo termina.
+        3. Si pierde rastro → Exploring
+        4. Si encuentra enemigo → Attacking  (manejado en update)
         """
         steer_x, steer_y = SoldierBehavior.detect_danger_pheromones(ant)
 
         if steer_x == 0 and steer_y == 0:
-            # Perdió el rastro
             ant.state = "Exploring"
             return
 
@@ -174,17 +140,19 @@ class SoldierBehavior:
         turn_force = angle_diff * 2
         ant.angle += max(-ant.turn_speed * dt, min(ant.turn_speed * dt, turn_force))
 
-        # Reforzar el camino con feromona DANGER
-        ant.pheromone_timer += dt
-        if ant.pheromone_timer >= ant.pheromone_interval:
-            ant.world.pheromones.append(Pheromone(ant.x, ant.y, "DANGER"))
+        # FIX 1: solo reforzar el rastro si hay un enemigo real cerca
+        enemy_visible = SoldierBehavior.detect_enemy(ant)
+        if enemy_visible:
+            ant.pheromone_timer += dt
+            if ant.pheromone_timer >= ant.pheromone_interval:
+                ant.world.pheromones.append(Pheromone(ant.x, ant.y, "DANGER"))
+                ant.pheromone_timer = 0
+        else:
+            # Sin enemigo: resetear el timer para no acumular al volver a Attacking
             ant.pheromone_timer = 0
 
     @staticmethod
     def _state_waiting_in_nest(ant, dt):
-        """
-        Recuperar energía. Después de cierto tiempo → Exploring.
-        """
         ant.nest_timer += dt
         ant.energy = min(100, ant.energy + 10 * dt)
 
@@ -193,13 +161,13 @@ class SoldierBehavior:
             ant.nest_timer = 0
 
     # =========================================================
-    # UTILIDADES DE PERCEPCIÓN (solo retornan datos, sin decisiones)
+    # UTILIDADES DE PERCEPCIÓN
     # =========================================================
 
     @staticmethod
     def detect_enemy(ant):
         """Retorna el enemigo más cercano dentro del FOV, o None."""
-        closest = None
+        closest  = None
         min_dist = ant.vision_radius
 
         for obj in ant.world.obstacles.obstacles:
@@ -216,18 +184,13 @@ class SoldierBehavior:
 
             dir_x = dx / distance
             dir_y = dy / distance
+            dot = dir_x * math.cos(ant.angle) + dir_y * math.sin(ant.angle)
 
-            forward_x = math.cos(ant.angle)
-            forward_y = math.sin(ant.angle)
-
-            dot = dir_x * forward_x + dir_y * forward_y
-            max_angle = math.cos(ant.fov / 2)
-
-            if dot < max_angle:
+            if dot < math.cos(ant.fov / 2):
                 continue
 
             if distance < min_dist:
-                closest = obj
+                closest  = obj
                 min_dist = distance
 
         return closest
@@ -236,7 +199,7 @@ class SoldierBehavior:
     def detect_danger_pheromones(ant):
         """
         Retorna vector de steering hacia el gradiente de feromonas DANGER.
-        Usado para FollowingDangerTrail.
+        Solo retorna datos — sin decisiones.
         """
         steer_x = 0
         steer_y = 0
@@ -255,17 +218,14 @@ class SoldierBehavior:
 
             dir_x = dx / dist
             dir_y = dy / dist
+            dot = dir_x * math.cos(ant.angle) + dir_y * math.sin(ant.angle)
 
-            forward_x = math.cos(ant.angle)
-            forward_y = math.sin(ant.angle)
-
-            dot = dir_x * forward_x + dir_y * forward_y
             if dot < 0:
                 continue
 
             direction_weight = dot ** 2
             falloff = max(0, 1 - (dist / ant.vision_radius))
-            weight = p.strength * direction_weight * falloff
+            weight  = p.strength * direction_weight * falloff
 
             steer_x += dir_x * weight
             steer_y += dir_y * weight
