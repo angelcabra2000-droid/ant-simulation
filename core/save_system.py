@@ -79,7 +79,13 @@ def load_world(world):
     # -----------------------------
     # CARGAR HORMIGAS
     # -----------------------------
-    for ant, ant_data in zip(world.ants, data.get("ants", [])):
+    world.ants.clear()
+
+    for ant_data in data.get("ants", []):
+
+        caste = AntCaste[ant_data.get("caste", "WORKER")]
+
+        ant = world.create_ant(caste)
 
         ant.age = ant_data["age"]
         ant.energy = ant_data["energy"]
@@ -87,28 +93,25 @@ def load_world(world):
         ant.y = ant_data["y"]
         ant.angle = ant_data["angle"]
 
-        saved_caste = ant_data.get("caste", "WORKER")
-        ant.caste = AntCaste[saved_caste]
-        ant.apply_caste_stats()
-
         saved_state = ant_data.get("state", "Exploring")
-        states_need_target = ["GoingToFood", "Attacking"]
-
-        if saved_state in states_need_target:
+        if saved_state in ["GoingToFood", "Attacking"]:
             ant.state = "Exploring"
-            ant.target = None
         else:
             ant.state = saved_state
-            ant.target = None
 
+        ant.target = None
         ant.is_eating = False
         ant.carrying_food = ant_data.get("carrying_food", False)
 
+        ant.current_speed = ant_data.get("current_speed", ant.speed)
         ant.nest_timer = ant_data.get("nest_timer", 0)
         ant.return_turn_timer = ant_data.get("return_turn_timer", 0)
         ant.turn_timer = ant_data.get("turn_timer", 0)
 
-        ant.trail = deque(ant_data.get("trail", []), maxlen=20000)
+        ant.trail = deque(
+            ant_data.get("trail", []),
+            maxlen=20000
+        )
 
     # -----------------------------
     # OBSTÁCULOS

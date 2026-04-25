@@ -9,7 +9,7 @@ from agents.ant_caste import AntCaste
 
 class Ant:
 
-    def __init__(self, ant_id, world, caste):
+    def __init__(self, ant_id, world, caste, x=None, y=None):
 
         self.id = ant_id
         self.world = world

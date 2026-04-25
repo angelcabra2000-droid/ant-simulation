@@ -100,9 +100,11 @@ def main():
 
         panel.draw(screen)
         object_panel.draw(screen)
+        
 
         pygame.display.flip()
 
+    world.save_state()
     pygame.quit()
     sys.exit()
 
